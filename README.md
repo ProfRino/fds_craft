@@ -14,15 +14,27 @@
   <img src="assets/PromoGiF.gif" alt="FDS Craft in action" width="720">
 </p>
 
+<p align="center">
+  <a href="https://profrino.github.io/fds_craft/"><b>▶ Play it now in your browser</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/ProfRino/fds_craft/releases/latest">⬇ Download the latest release</a>
+</p>
+
 ---
 
-## Download
+## Use it
 
-**No installation. No build step. No admin rights. No internet at runtime.**
+You have two options. Both run the exact same code.
 
-Grab the [latest release zip](https://github.com/ProfRino/fds_craft/releases/latest), unzip it anywhere on your PC (Desktop, Downloads, USB stick, school network share — wherever), and double-click `index.html`. That's the whole setup procedure. Per-version download counts and older releases live at <https://github.com/ProfRino/fds_craft/releases>.
+### Online — zero setup
 
-If you'd rather track development, clone instead: `git clone https://github.com/ProfRino/fds_craft.git`.
+Click **[Play FDS Craft in your browser](https://profrino.github.io/fds_craft/)**. Works on any modern desktop browser. Your scenes autosave to `localStorage` in that browser, so come back to the same machine and your build is still there.
+
+### Offline — no installation, no admin rights, no internet at runtime
+
+Grab the [latest release zip](https://github.com/ProfRino/fds_craft/releases/latest), unzip it anywhere (Desktop, Downloads, USB stick, school network share — wherever), and double-click `index.html`. That's the whole setup procedure. All assets are vendored locally; once you have the folder you can use FDS Craft on a plane, in a basement, behind a corporate firewall.
+
+If you'd rather track development, clone instead: `git clone https://github.com/ProfRino/fds_craft.git`. Per-version download counts and older releases live at <https://github.com/ProfRino/fds_craft/releases>.
 
 ## What is this?
 
@@ -30,12 +42,13 @@ You place blocks. The app writes a [`&OBST`](https://github.com/firemodels/fds) 
 
 It is, in fact, the gentlest possible on-ramp into a software ecosystem that normally welcomes new users with a 540-page user guide and a Fortran 90 stack trace.
 
-## Run it
+## First time you open it
 
-1. Open `index.html` from the unzipped folder in any modern browser.
-2. Click **Start**, click in the canvas to lock the pointer, build something, hit **Export**.
+1. Click **Start**.
+2. Click in the canvas to lock the pointer.
+3. Build something with right-click. Add a burner. Hit **Export**.
 
-That's it. Three.js and the fonts are vendored locally, so once you have the folder you can use FDS Craft offline forever. If you want to host it for a classroom, drop the folder on any static file server (GitHub Pages, Netlify, your nephew's Raspberry Pi).
+That's it. If you want to host your own copy for a classroom, drop the folder on any static file server (GitHub Pages, Netlify, your nephew's Raspberry Pi).
 
 ## Controls
 
