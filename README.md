@@ -112,6 +112,18 @@ Block, fire, and smoke textures are generated procedurally at runtime in pure JS
 
 [MIT](LICENSE) — do whatever you like, but don't blame us when the burner exports correctly *and* your living-room model floods with simulated soot.
 
+## Watch the trailer
+
+<p align="center">
+  <a href="https://youtu.be/YadGez-6VpE">
+    <img src="https://img.youtube.com/vi/YadGez-6VpE/hqdefault.jpg" alt="FDS Craft trailer on YouTube" width="480">
+  </a>
+</p>
+
+<p align="center">
+  ▶ <a href="https://youtu.be/YadGez-6VpE"><b>Watch on YouTube</b></a>
+</p>
+
 ---
 
 *FDS and Smokeview are developed by [NIST](https://pages.nist.gov/fds-smv/). This project has no affiliation with NIST — it's a fan project that just happens to speak their language.*
