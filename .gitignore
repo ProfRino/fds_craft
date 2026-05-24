@@ -1,0 +1,47 @@
+# Promotional source material (videos, project files, audio) — kept local, not shipped
+Promo/
+
+# Exported scenes are user-generated, not source
+scenes/*.fds
+scenes/*.fdscraft.json
+scenes/*.smv
+scenes/*.out
+scenes/*_hrr.csv
+scenes/*_devc.csv
+scenes/*_steps.csv
+scenes/*_git.txt
+scenes/*.bf
+scenes/*.bf.bnd
+scenes/*.sf
+scenes/*.sf.bnd
+scenes/*.s3d
+scenes/*.s3d.sz
+scenes/*.s3dd
+scenes/*.prt5
+scenes/*.prt5.bnd
+scenes/*.restart
+scenes/*.binfo
+scenes/*.info
+scenes/*.bingeom
+scenes/run_fds.bat
+scenes/open_smv.bat
+
+# Keep the folder itself so the export target exists out of the box
+!scenes/.gitkeep
+
+# OS / editor junk
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Node / build artefacts (none today, but defensive)
+node_modules/
+dist/
+build/
+*.log

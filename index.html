@@ -1,0 +1,2567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDS Craft</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='2' width='20' height='20' fill='%237a7a7a' stroke='%23222' stroke-width='2'/%3E%3Crect x='2' y='2' width='20' height='5' fill='%235fb850'/%3E%3C/svg%3E">
+<style>
+/* ═════════════════════════════════════════════════════════════
+   FDS Craft — Minecraft-style voxel FDS geometry builder
+   ═════════════════════════════════════════════════════════════ */
+
+/* Local fonts (vendored — no network needed) */
+@font-face {
+    font-family: 'VT323';
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+    src: url('fonts/vt323.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Press Start 2P';
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+    src: url('fonts/press_start_2p.woff2') format('woff2');
+}
+:root {
+    --mc-stone:        #6b6b6b;
+    --mc-stone-mid:    #5a5a5a;
+    --mc-stone-light:  #a0a0a0;
+    --mc-stone-dark:   #2a2a2a;
+    --mc-stone-darker: #1a1a1a;
+    --mc-grass:        #5fb850;
+    --mc-grass-light:  #7dcd6e;
+    --mc-grass-dark:   #3d8a30;
+    --mc-text:         #ffffff;
+    --mc-text-shadow:  #3f3f3f;
+    --mc-text-yellow:  #fcfc00;
+    --mc-text-grey:    #aaaaaa;
+    --mc-bg-dark:      rgba(20,20,20,0.92);
+    --mc-bg-overlay:   rgba(0,0,0,0.62);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 18px;
+    background: #1a1a1a;
+    color: var(--mc-text);
+    user-select: none;
+    image-rendering: pixelated;
+}
+body { letter-spacing: 0.3px; }
+
+#viewer { position: absolute; inset: 0; }
+canvas { display: block; }
+
+/* ── Minecraft-style stone button ───────────────────────────── */
+.mc-btn {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 18px;
+    color: var(--mc-text);
+    text-shadow: 2px 2px 0 var(--mc-text-shadow);
+    background: var(--mc-stone);
+    border: 2px solid;
+    border-top-color: var(--mc-stone-light);
+    border-left-color: var(--mc-stone-light);
+    border-right-color: var(--mc-stone-dark);
+    border-bottom-color: var(--mc-stone-dark);
+    border-radius: 0;
+    padding: 4px 12px;
+    cursor: pointer;
+    line-height: 1.3;
+    image-rendering: pixelated;
+    transition: none;
+}
+.mc-btn:hover { background: #7a7a7a; color: var(--mc-text-yellow); }
+.mc-btn:active {
+    border-top-color: var(--mc-stone-dark);
+    border-left-color: var(--mc-stone-dark);
+    border-right-color: var(--mc-stone-light);
+    border-bottom-color: var(--mc-stone-light);
+}
+.mc-btn-primary {
+    background: var(--mc-grass);
+    border-top-color: var(--mc-grass-light);
+    border-left-color: var(--mc-grass-light);
+    border-right-color: var(--mc-grass-dark);
+    border-bottom-color: var(--mc-grass-dark);
+}
+.mc-btn-primary:hover { background: #6dc560; color: var(--mc-text-yellow); }
+.mc-btn-icon { width: 28px; padding: 4px 0; text-align: center; }
+.mc-btn.muted { color: #888; text-decoration: line-through; }
+
+/* Time-of-day slider in the top bar */
+.tb-time { display: flex; align-items: center; gap: 6px; margin-left: 8px; }
+.tb-icon {
+    font-size: 18px; color: #ffe080;
+    text-shadow: 1px 1px 0 #000;
+    width: 18px; text-align: center;
+}
+.tb-time-display {
+    min-width: 44px; font-variant-numeric: tabular-nums;
+    color: var(--mc-text-yellow);
+}
+.tb-slider {
+    appearance: none; -webkit-appearance: none;
+    width: 110px; height: 8px;
+    background: var(--mc-stone-darker);
+    border: 2px solid;
+    border-top-color: var(--mc-stone-darker);
+    border-left-color: var(--mc-stone-darker);
+    border-right-color: #888;
+    border-bottom-color: #888;
+    border-radius: 0;
+    outline: none;
+    cursor: pointer;
+}
+.tb-slider::-webkit-slider-thumb {
+    appearance: none; -webkit-appearance: none;
+    width: 12px; height: 16px;
+    background: var(--mc-stone);
+    border: 2px solid;
+    border-top-color: var(--mc-stone-light);
+    border-left-color: var(--mc-stone-light);
+    border-right-color: var(--mc-stone-dark);
+    border-bottom-color: var(--mc-stone-dark);
+    cursor: pointer;
+}
+.tb-slider::-moz-range-thumb {
+    width: 12px; height: 16px;
+    background: var(--mc-stone);
+    border: 2px solid;
+    border-top-color: var(--mc-stone-light);
+    border-left-color: var(--mc-stone-light);
+    border-right-color: var(--mc-stone-dark);
+    border-bottom-color: var(--mc-stone-dark);
+    cursor: pointer;
+    border-radius: 0;
+}
+.mc-btn-large {
+    padding: 8px 28px;
+    font-size: 22px;
+    margin-top: 8px;
+}
+
+/* ── Minecraft-style stone panel ────────────────────────────── */
+.mc-panel {
+    background: var(--mc-bg-dark);
+    border: 3px solid;
+    border-top-color: #6a6a6a;
+    border-left-color: #6a6a6a;
+    border-right-color: #161616;
+    border-bottom-color: #161616;
+    padding: 24px 36px;
+    color: var(--mc-text);
+    border-radius: 0;
+}
+
+/* ── Top bar ────────────────────────────────────────────────── */
+.top-bar {
+    position: fixed; top: 0; left: 0; right: 0; height: 56px;
+    background: var(--mc-stone-mid);
+    border-bottom: 3px solid var(--mc-stone-darker);
+    box-shadow: 0 1px 0 #555 inset;
+    display: flex; align-items: center; padding: 0 12px; gap: 10px;
+    z-index: 200;
+}
+.logo {
+    display: flex; align-items: center; height: 100%;
+}
+.logo img {
+    height: 44px; width: auto;
+    image-rendering: pixelated;
+    filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.6));
+}
+.tb-label {
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    color: var(--mc-text-grey);
+    text-shadow: 1px 1px 0 #222;
+    margin-left: 4px;
+}
+.title-input {
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    background: var(--mc-stone-darker);
+    border: 2px solid;
+    border-top-color: var(--mc-stone-darker);
+    border-left-color: var(--mc-stone-darker);
+    border-right-color: #888;
+    border-bottom-color: #888;
+    color: var(--mc-text);
+    padding: 4px 8px;
+    border-radius: 0;
+    outline: none;
+}
+.title-input:focus {
+    border-top-color: var(--mc-grass-dark);
+    border-left-color: var(--mc-grass-dark);
+    border-right-color: var(--mc-grass-light);
+    border-bottom-color: var(--mc-grass-light);
+    background: #111;
+}
+.title-input.chid { width: 140px; }
+.title-input.tend { width: 64px; text-align: right; }
+.title-input.cell { width: 72px; text-align: right; }
+/* Hide browser spinners on number inputs so the value isn't crushed */
+.title-input[type="number"]::-webkit-outer-spin-button,
+.title-input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+}
+.title-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.spacer { flex: 1; }
+.stat-pill {
+    background: var(--mc-stone-darker);
+    border: 2px solid;
+    border-top-color: var(--mc-stone-darker);
+    border-left-color: var(--mc-stone-darker);
+    border-right-color: #888;
+    border-bottom-color: #888;
+    padding: 4px 10px;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    color: var(--mc-text);
+    text-shadow: 1px 1px 0 #000;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Hotbar (Minecraft 9-slot bar) ──────────────────────────── */
+#hotbar {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 0; padding: 3px;
+    background: rgba(0,0,0,0.55);
+    border: 2px solid;
+    border-top-color: #161616;
+    border-left-color: #161616;
+    border-right-color: #6a6a6a;
+    border-bottom-color: #6a6a6a;
+    z-index: 40;
+}
+.slot {
+    width: 54px; height: 54px;
+    background: rgba(139,139,139,0.45);
+    border: 2px solid;
+    border-top-color: rgba(40,40,40,0.85);
+    border-left-color: rgba(40,40,40,0.85);
+    border-right-color: rgba(255,255,255,0.30);
+    border-bottom-color: rgba(255,255,255,0.30);
+    border-radius: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; cursor: pointer;
+    transition: transform 0.08s;
+}
+.slot:hover { background: rgba(180,180,180,0.5); }
+.slot.active {
+    border-color: var(--mc-text);
+    transform: scale(1.10);
+    z-index: 1;
+    box-shadow: 0 0 8px rgba(255,255,255,0.5);
+}
+.slot canvas.swatch {
+    width: 36px; height: 36px;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+}
+.slot .num {
+    position: absolute; bottom: 2px; right: 4px;
+    font-family: 'VT323', monospace; font-size: 13px;
+    color: var(--mc-text); text-shadow: 1px 1px 0 #000;
+}
+.slot .name {
+    display: none;
+}
+
+/* Tooltip above the active slot */
+#slot-tooltip {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    background: rgba(20,20,20,0.92);
+    border: 2px solid #555;
+    color: var(--mc-text);
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    padding: 6px 12px;
+    text-shadow: 1px 1px 0 #000;
+    z-index: 41;
+    opacity: 0; transition: opacity 0.15s;
+    pointer-events: none;
+    text-align: center;
+    max-width: 360px;
+}
+#slot-tooltip.show { opacity: 1; }
+#slot-tooltip .tt-name { color: var(--mc-text-yellow); font-size: 18px; display: block; margin-bottom: 2px; }
+#slot-tooltip .tt-desc { color: var(--mc-text-grey); font-size: 14px; }
+
+/* ── Crosshair ──────────────────────────────────────────────── */
+#crosshair {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 18px; height: 18px; pointer-events: none; z-index: 30;
+    opacity: 0; transition: opacity 0.2s;
+}
+#crosshair.active { opacity: 0.85; }
+#crosshair::before, #crosshair::after {
+    content: ''; position: absolute; background: white; mix-blend-mode: difference;
+}
+#crosshair::before { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
+#crosshair::after { top: 50%; left: 0; height: 2px; width: 100%; transform: translateY(-50%); }
+
+/* ── Info panel (top-right) ─────────────────────────────────── */
+#info-panel {
+    position: fixed; top: 68px; right: 12px;
+    background: rgba(0,0,0,0.55);
+    border: 2px solid;
+    border-top-color: #161616;
+    border-left-color: #161616;
+    border-right-color: #6a6a6a;
+    border-bottom-color: #6a6a6a;
+    padding: 6px 12px;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    z-index: 200;
+    color: var(--mc-text);
+    min-width: 180px;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 1px 1px 0 #000;
+}
+#info-panel .row {
+    display: flex; justify-content: space-between; gap: 8px; padding: 1px 0;
+}
+#info-panel .row .l { color: var(--mc-text-grey); }
+#info-panel .row b { color: var(--mc-text-yellow); font-weight: normal; }
+
+/* ── Pause overlay ──────────────────────────────────────────── */
+#overlay {
+    position: fixed; inset: 0;
+    background: var(--mc-bg-overlay);
+    backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; cursor: pointer;
+}
+#overlay.hidden { display: none; }
+#overlay .mc-panel {
+    max-width: 600px; text-align: center;
+    padding: 32px 48px;
+}
+#overlay .overlay-logo {
+    height: 90px; width: auto;
+    image-rendering: pixelated;
+    filter: drop-shadow(3px 3px 0 rgba(0,0,0,0.7));
+    margin-bottom: 10px;
+}
+#overlay .sub {
+    color: var(--mc-text-grey);
+    margin-bottom: 18px;
+    font-size: 16px;
+    text-shadow: 1px 1px 0 #000;
+}
+#overlay .keys {
+    display: grid; grid-template-columns: auto 1fr; gap: 8px 24px;
+    margin: 16px auto 18px; text-align: left; font-size: 16px;
+    max-width: 420px;
+}
+#overlay .keys b { color: var(--mc-text); font-weight: normal; text-shadow: 1px 1px 0 #000; }
+#overlay .keys .k { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; color: var(--mc-text-grey); }
+
+kbd {
+    background: var(--mc-stone-darker);
+    border: 1px solid #555;
+    border-bottom-width: 2px;
+    border-radius: 0;
+    padding: 1px 6px;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    color: var(--mc-text);
+    min-width: 18px; text-align: center;
+}
+.overlay-actions {
+    display: flex; gap: 10px; justify-content: center; margin-top: 14px;
+}
+.overlay-hint {
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--mc-text-grey);
+    border-top: 1px solid #333;
+    padding-top: 12px;
+    text-shadow: 1px 1px 0 #000;
+}
+
+/* ── Help + Credits modals (shared styling) ─────────────────── */
+#help-modal, #credits-modal {
+    position: fixed; inset: 0;
+    background: var(--mc-bg-overlay);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 300;
+}
+#help-modal.hidden, #credits-modal.hidden { display: none; }
+#help-modal .mc-panel, #credits-modal .mc-panel {
+    max-width: 680px; max-height: 86vh;
+    overflow-y: auto;
+    padding: 24px 32px;
+}
+#help-modal h2, #credits-modal h2 {
+    font-family: 'Press Start 2P', monospace;
+    color: var(--mc-text);
+    text-shadow: 3px 3px 0 var(--mc-text-shadow);
+    font-size: 16px;
+    margin-bottom: 18px;
+}
+#help-modal h3, #credits-modal h3 {
+    font-family: 'VT323', monospace;
+    color: var(--mc-text-yellow);
+    text-shadow: 1px 1px 0 #000;
+    font-size: 20px;
+    margin-top: 18px;
+    margin-bottom: 6px;
+}
+#help-modal h3:first-of-type, #credits-modal h3:first-of-type { margin-top: 0; }
+#help-modal p, #help-modal td, #help-modal li,
+#credits-modal p, #credits-modal td, #credits-modal li {
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    line-height: 1.4;
+    color: var(--mc-text);
+    text-shadow: 1px 1px 0 #000;
+}
+#help-modal p, #credits-modal p { margin-bottom: 6px; }
+#help-modal code, #credits-modal code {
+    background: #000; color: #8fec8f; padding: 1px 5px;
+    border: 1px solid #2a2a2a;
+}
+#help-modal table, #credits-modal table {
+    border-collapse: collapse; width: 100%; margin: 6px 0 8px;
+}
+#help-modal th, #help-modal td,
+#credits-modal th, #credits-modal td {
+    text-align: left; padding: 4px 8px;
+    border-bottom: 1px solid #333;
+}
+#help-modal th, #credits-modal th { color: var(--mc-text-grey); font-weight: normal; }
+#help-modal .mat-swatch {
+    display: inline-block; width: 16px; height: 16px;
+    vertical-align: middle; margin-right: 6px;
+    border: 1px solid #000;
+    image-rendering: pixelated;
+}
+#help-modal .actions, #credits-modal .actions {
+    display: flex; justify-content: flex-end; margin-top: 16px;
+}
+
+/* ── Esc hint + Footer + Toast ──────────────────────────────── */
+#esc-hint {
+    position: fixed; top: 68px; left: 12px;
+    background: rgba(0,0,0,0.55);
+    border: 2px solid;
+    border-top-color: #161616;
+    border-left-color: #161616;
+    border-right-color: #6a6a6a;
+    border-bottom-color: #6a6a6a;
+    padding: 4px 10px;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    color: var(--mc-text);
+    z-index: 30;
+    opacity: 0; transition: opacity 0.25s;
+    pointer-events: none;
+    text-shadow: 1px 1px 0 #000;
+}
+#esc-hint.active { opacity: 1; }
+
+#toast {
+    position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+    background: rgba(20,20,20,0.95);
+    border: 2px solid var(--mc-grass);
+    color: var(--mc-text);
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    padding: 6px 16px;
+    z-index: 250;
+    opacity: 0; transition: opacity 0.2s;
+    pointer-events: none;
+    text-shadow: 1px 1px 0 #000;
+}
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="viewer"></div>
+
+<div class="top-bar">
+    <div class="logo">
+        <img src="assets/Logo%20FDS.png" alt="FDS Craft">
+    </div>
+    <span class="tb-label">CHID</span>
+    <input type="text" class="title-input chid" id="chid-input" value="my_scene" maxlength="40">
+    <span class="tb-label">T_END</span>
+    <input type="number" class="title-input tend" id="tend-input" value="60" min="1" max="3600">
+    <span class="tb-label">s &middot; FDS cell</span>
+    <input type="number" class="title-input cell" id="cell-input" value="0.25" min="0.05" max="1.0" step="0.05">
+    <span class="tb-label">m</span>
+    <div class="spacer"></div>
+    <div class="tb-time">
+        <span class="tb-icon" id="time-icon" title="Time of day">&#9728;</span>
+        <input type="range" class="tb-slider" id="time-slider" min="0" max="24" step="0.25" value="12">
+        <span class="tb-label tb-time-display" id="time-display">12:00</span>
+    </div>
+    <button class="mc-btn mc-btn-icon" id="mute-btn" title="Mute / unmute sound">&#9834;</button>
+    <button class="mc-btn mc-btn-icon" id="fs-btn" title="Toggle fullscreen (or press F11)">&#9974;</button>
+    <span class="stat-pill" id="block-count">0 blocks</span>
+    <button class="mc-btn mc-btn-icon" id="help-btn" title="How does it work?">?</button>
+    <button class="mc-btn" id="reset-btn">Reset</button>
+    <button class="mc-btn mc-btn-primary" id="export-btn">Export .fds</button>
+</div>
+
+<div id="info-panel">
+    <div class="row"><span class="l">Selected</span><b id="info-mat">CONCRETE</b></div>
+    <div class="row"><span class="l">Position</span><b id="info-pos">&mdash;</b></div>
+    <div class="row"><span class="l">Looking at</span><b id="info-target">&mdash;</b></div>
+    <div class="row"><span class="l">Block</span><b>1 m voxel</b></div>
+</div>
+
+<div id="crosshair"></div>
+
+<div id="hotbar"></div>
+<div id="slot-tooltip">
+    <span class="tt-name"></span>
+    <span class="tt-desc"></span>
+</div>
+
+<div id="esc-hint">Press <kbd>Esc</kbd> for menu &amp; export</div>
+
+<div id="toast"></div>
+
+<!-- Pause overlay -->
+<div id="overlay">
+    <div class="mc-panel">
+        <img src="assets/Logo%20FDS.png" alt="FDS Craft" class="overlay-logo">
+        <div class="sub">Minecraft-style voxel builder &middot; exports a runnable .fds file</div>
+        <div class="keys">
+            <span class="k"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><b>Move</b>
+            <span class="k"><kbd>Space</kbd> / <kbd>Shift</kbd></span><b>Up / Down</b>
+            <span class="k"><kbd>Ctrl</kbd></span><b>Sprint</b>
+            <span class="k">Mouse</span><b>Look around</b>
+            <span class="k">Left click</span><b>Break block</b>
+            <span class="k">Right click</span><b>Place block</b>
+            <span class="k"><kbd>1</kbd>&ndash;<kbd>6</kbd></span><b>Select material</b>
+            <span class="k"><kbd>Esc</kbd></span><b>Release mouse</b>
+        </div>
+        <button class="mc-btn mc-btn-large" id="start-btn">Click to start</button>
+        <div class="overlay-actions">
+            <button class="mc-btn" id="overlay-save" title="Download this scene as a .fdscraft.json file">Save scene</button>
+            <button class="mc-btn" id="overlay-load" title="Load a .fdscraft.json file">Load scene</button>
+            <button class="mc-btn" id="overlay-fullscreen" title="Toggle fullscreen — hides URL bar (F11 works too)">Fullscreen</button>
+            <button class="mc-btn" id="overlay-reset">Reset</button>
+            <button class="mc-btn mc-btn-primary" id="overlay-export">Export .fds</button>
+            <button class="mc-btn" id="overlay-help">? Help</button>
+            <button class="mc-btn" id="overlay-credits">Credits</button>
+        </div>
+        <div class="overlay-hint">Top bar with <b>CHID</b>, <b>T_END</b>, <b>FDS cell</b> &amp; <b>Export</b> is also clickable here.</div>
+    </div>
+</div>
+
+<!-- Help modal -->
+<div id="help-modal" class="hidden">
+    <div class="mc-panel">
+        <h2>How FDS Craft maps to FDS</h2>
+
+        <h3>Block size</h3>
+        <p>Each visual cube is <code>1.0 m × 1.0 m × 1.0 m</code>. The FDS mesh cell is set separately (top bar, default <code>0.25 m</code>) — so one cube becomes a <b>1 m OBST</b> sitting inside a finer <b>0.25 m grid</b>. Change the cell to 0.5 m or 0.1 m as your simulation budget allows.</p>
+
+        <h3>Materials &amp; how they export</h3>
+        <table id="help-mat-table">
+            <tr><th>Block</th><th>What you get in the .fds</th></tr>
+        </table>
+
+        <h3>How the Burner works</h3>
+        <p>Each burner cube is an <code>&amp;OBST</code> with <code>SURF_ID='BURNER'</code> applied to <b>all 6 faces</b>. The SURF carries <code>HRRPUA=500 kW/m²</code> with a <code>TAU_Q=-30 s</code> t² ramp.</p>
+        <p>Fire only emits from <b>exposed</b> faces. A face touching another OBST is "blocked" — FDS silently skips it (no error). So a burner against a wall fires from 5 faces (~2.5 MW peak); a burner fully buried in other blocks emits 0 kW. This is standard FDS behaviour, not a bug.</p>
+        <p>If you want a fire source on just one face, place a thin BURNER block on top of a CONCRETE block — the burner's bottom face will be blocked, the top will burn (~500 kW).</p>
+
+        <h3>Hole</h3>
+        <p>A HOLE only lands on top of an existing block (any OBST except a BURNER) and carves it out — pick HOLE, right-click a CONCRETE block, and that cell becomes a doorway. The under-block stays in the FDS export so the <code>&amp;HOLE</code> has something to cut through; left-click the HOLE to restore the original block. Trying to place a HOLE in empty space (or on a burner) is rejected — this mirrors FDS, where <code>&amp;HOLE</code> only does anything when it overlaps an <code>&amp;OBST</code>.</p>
+
+        <h3>Mesh &amp; boundaries</h3>
+        <p>The mesh auto-sizes to your built area + 1-block XY padding + 2-block Z headroom. All five non-floor faces get <code>&amp;VENT MB='OPEN'</code> so smoke can leave.</p>
+
+        <h3>Greedy merging</h3>
+        <p>Adjacent same-material blocks along X are merged into a single OBST. A 10-block wall → 1 line in the .fds.</p>
+
+        <h3>Workflow after export</h3>
+        <p>1. Move the downloaded <code>.fds</code> into <code>simulations/&lt;name&gt;/</code><br>
+           2. Lint: <code>python scripts\validate_fds.py &lt;file&gt;.fds</code><br>
+           3. Preview: <code>scripts\serve_viewer.bat</code> + the viewer URL<br>
+           4. Run: <code>scripts\run_fds.bat</code></p>
+
+        <div class="actions">
+            <button class="mc-btn" id="help-close">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Credits modal -->
+<div id="credits-modal" class="hidden">
+    <div class="mc-panel">
+        <h2>Credits</h2>
+
+        <h3>Project lead</h3>
+        <p><b>Prof Rino Lovreglio</b> &middot; Massey University<br>
+           Fire engineering &middot; performance-based design &middot; FDS workflows</p>
+
+        <h3>Play Tester</h3>
+        <p><b>Luke De Schot</b> &middot; University of Canterbury</p>
+
+        <h3>Disclaimer</h3>
+        <p>FDS Craft exports <em>valid FDS syntax</em>. That is the only
+           promise. Any resemblance to real fire dynamics is a happy accident
+           &mdash; please get a qualified fire engineer to check the
+           <code>.fds</code> before showing it to a building consent officer
+           (or to anyone whose insurance you care about).</p>
+        <p style="color: var(--mc-text-yellow);">No responsibility is taken
+           for your kids becoming a fire engineer &mdash; or, even worse,
+           a fire scientist.</p>
+
+        <h3>Built with</h3>
+        <table>
+            <tr><th>Library</th><th>Use</th></tr>
+            <tr><td><b>Three.js r128</b></td><td>3D rendering — <code>vendor/three.min.js</code> (MIT)</td></tr>
+            <tr><td><b>VT323</b></td><td>Pixel body font — Peter Hull (OFL)</td></tr>
+            <tr><td><b>Press Start 2P</b></td><td>Pixel heading font — CodeMan38 (OFL)</td></tr>
+            <tr><td><b>Web Audio API</b></td><td>All sounds synthesized live — no samples used</td></tr>
+        </table>
+
+        <h3>Asset acknowledgements</h3>
+        <p><b>Logo:</b> created by ChatGPT Image 2<br>
+           <b>Block / fire / smoke textures:</b> generated procedurally at runtime (pure JS canvas)<br>
+           <b>FDS colour conventions:</b> match the Smokeview & FDS6 colour keywords</p>
+
+        <h3>Developed with AI assistance</h3>
+        <p>Built iteratively with <b>Claude Code</b> (Anthropic).</p>
+
+        <div class="actions">
+            <button class="mc-btn" id="credits-close">Close</button>
+        </div>
+    </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script>
+'use strict';
+
+// ──────────────────────────────────────────────────────────────
+// FDS material palette
+// ──────────────────────────────────────────────────────────────
+const MATERIALS = [
+    { id: 'CONCRETE', label: 'Concrete', hex: 0x9C9C9C, fdsColor: 'GRAY',        emit: 'OBST',
+      desc: 'Inert wall · ρ=2300, λ=1.8 W/m·K, THICKNESS=0.2 m' },
+    { id: 'WOOD',     label: 'Wood',     hex: 0xA0703C, fdsColor: 'SANDY BROWN', emit: 'OBST',
+      desc: 'Wood · ρ=450, λ=0.14 (no pyrolysis by default)' },
+    { id: 'STEEL',    label: 'Steel',    hex: 0xC8C8C8, fdsColor: 'SILVER',      emit: 'OBST',
+      desc: 'Steel · non-combustible structural surface' },
+    { id: 'GLASS',    label: 'Glass',    hex: 0xA8D0E0, fdsColor: 'LIGHT BLUE',  emit: 'OBST',
+      transparent: true, opacity: 0.55,
+      desc: 'Glass · 30% transparent in Smokeview' },
+    { id: 'BURNER',   label: 'Burner',   hex: 0xD63017, fdsColor: 'RED',         emit: 'BURNER',
+      desc: 'Fire source · HRRPUA=500 kW/m², TAU_Q=-30 s, all exposed faces burn' },
+    { id: 'HOLE',     label: 'Hole',     hex: 0xFFE044, fdsColor: 'YELLOW',      emit: 'HOLE',
+      transparent: true, opacity: 0.45,
+      desc: '&HOLE · right-click a non-fire block to carve an opening through it' },
+];
+
+const BLOCK_SIZE = 1.0;
+let selectedSlot = 0;
+
+function seededRng(seedStr) {
+    let s = 0;
+    for (let i = 0; i < seedStr.length; i++) s = (s * 31 + seedStr.charCodeAt(i)) | 0;
+    return () => {
+        s = (s * 1664525 + 1013904223) | 0;
+        return ((s >>> 0) / 4294967296);
+    };
+}
+
+// ──────────────────────────────────────────────────────────────
+// Procedural 16×16 pixel textures
+// ──────────────────────────────────────────────────────────────
+function makeBlockTexture(matId) {
+    const N = 16;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = N;
+    const ctx = cv.getContext('2d');
+    const rng = seededRng(matId);
+
+    if (matId === 'CONCRETE') {
+        ctx.fillStyle = '#9C9C9C';
+        ctx.fillRect(0, 0, N, N);
+        for (let i = 0; i < 60; i++) {
+            const x = Math.floor(rng() * N), y = Math.floor(rng() * N);
+            ctx.fillStyle = rng() < 0.5 ? '#777777' : '#B2B2B2';
+            ctx.fillRect(x, y, 1, 1);
+        }
+        ctx.fillStyle = '#666666';
+        ctx.fillRect(0, 0, N, 1); ctx.fillRect(0, N-1, N, 1);
+        ctx.fillRect(0, 0, 1, N); ctx.fillRect(N-1, 0, 1, N);
+    }
+    else if (matId === 'WOOD') {
+        ctx.fillStyle = '#A47148';
+        ctx.fillRect(0, 0, N, N);
+        for (let x = 0; x < N; x++) {
+            const r = rng();
+            if (r < 0.28)       { ctx.fillStyle = '#6E4824'; ctx.fillRect(x, 0, 1, N); }
+            else if (r < 0.50)  { ctx.fillStyle = '#BE8B58'; ctx.fillRect(x, 0, 1, N); }
+            else if (r < 0.60)  { ctx.fillStyle = '#8A5A30'; ctx.fillRect(x, 0, 1, N); }
+        }
+        ctx.fillStyle = '#5A3A1C';
+        const ringY = [2 + Math.floor(rng() * 4), 9 + Math.floor(rng() * 4)];
+        for (const y of ringY) ctx.fillRect(0, y, N, 1);
+        ctx.fillStyle = '#4A2F18';
+        ctx.fillRect(0, 0, N, 1); ctx.fillRect(0, N-1, N, 1);
+    }
+    else if (matId === 'STEEL') {
+        for (let y = 0; y < N; y++) {
+            const shade = (y % 4 === 0) ? '#B6B6B6' : (y % 4 === 2 ? '#D4D4D4' : '#C8C8C8');
+            ctx.fillStyle = shade;
+            ctx.fillRect(0, y, N, 1);
+        }
+        const dots = [[2,2],[N-3,2],[2,N-3],[N-3,N-3]];
+        for (const [x, y] of dots) {
+            ctx.fillStyle = '#7F7F7F'; ctx.fillRect(x, y, 1, 1);
+            ctx.fillStyle = '#EAEAEA'; ctx.fillRect(x+1, y, 1, 1);
+        }
+        ctx.fillStyle = '#909090';
+        ctx.fillRect(0, 0, N, 1); ctx.fillRect(0, N-1, N, 1);
+        ctx.fillRect(0, 0, 1, N); ctx.fillRect(N-1, 0, 1, N);
+    }
+    else if (matId === 'GLASS') {
+        ctx.clearRect(0, 0, N, N);
+        ctx.fillStyle = 'rgba(170, 215, 235, 0.20)';
+        ctx.fillRect(1, 1, N-2, N-2);
+        ctx.fillStyle = 'rgba(120, 175, 205, 0.95)';
+        ctx.fillRect(0, 0, N, 1); ctx.fillRect(0, N-1, N, 1);
+        ctx.fillRect(0, 0, 1, N); ctx.fillRect(N-1, 0, 1, N);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.40)';
+        ctx.fillRect(2, 2, 4, 1); ctx.fillRect(2, 3, 1, 3);
+    }
+    else if (matId === 'BURNER') {
+        ctx.fillStyle = '#C92414';
+        ctx.fillRect(0, 0, N, N);
+        for (let i = 0; i < 90; i++) {
+            const x = Math.floor(rng() * N), y = Math.floor(rng() * N);
+            const pal = ['#7C1808', '#FF5520', '#FFB048', '#9C1A0E', '#FF8030'];
+            ctx.fillStyle = pal[Math.floor(rng() * pal.length)];
+            ctx.fillRect(x, y, 1, 1);
+        }
+        ctx.fillStyle = '#FFE060';
+        for (let i = 0; i < 4; i++) ctx.fillRect(Math.floor(rng() * N), Math.floor(rng() * N), 1, 1);
+    }
+    else if (matId === 'HOLE') {
+        ctx.fillStyle = 'rgba(255, 220, 50, 0.7)';
+        ctx.fillRect(0, 0, N, N);
+        ctx.fillStyle = 'rgba(20, 20, 20, 0.85)';
+        for (let i = -N; i < N * 2; i += 6) {
+            for (let k = 0; k < 3; k++) {
+                for (let y = 0; y < N; y++) {
+                    const x = i + k + y;
+                    if (x >= 0 && x < N) ctx.fillRect(x, y, 1, 1);
+                }
+            }
+        }
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(0, 0, N, 1); ctx.fillRect(0, N-1, N, 1);
+        ctx.fillRect(0, 0, 1, N); ctx.fillRect(N-1, 0, 1, N);
+    }
+
+    const tex = new THREE.CanvasTexture(cv);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.anisotropy = 1;
+    return { texture: tex, canvas: cv };
+}
+
+const TEX = {};
+for (const m of MATERIALS) TEX[m.id] = makeBlockTexture(m.id);
+
+// ──────────────────────────────────────────────────────────────
+// Procedural pixel-art flame frames (Minecraft-style)
+// 16×16 pixels rendered with NearestFilter → blocky chunky pixels
+// 4 frames cycled at ~8 fps for that classic Minecraft fire animation
+// ──────────────────────────────────────────────────────────────
+function makeFlameFrame(seed) {
+    const N = 24;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = N;
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, N, N);
+
+    // Minecraft fire palette (bottom → tip)
+    const PAL = ['#FFF6C8', '#FFE85A', '#FFC230', '#FF8520', '#E84500', '#A82400'];
+
+    const rng = seededRng('mcflame' + seed);
+
+    // Build tongues: clusters of 2-3 px wide, separated by 0-1 px gap
+    const cols = new Array(N).fill(0);
+    let x = 0;
+    while (x < N) {
+        const width = 2 + Math.floor(rng() * 2);   // 2 or 3 px wide
+        const gap = Math.floor(rng() * 2);          // 0 or 1 px gap
+        const xMid = x + width / 2;
+        const dx = Math.abs(xMid - N / 2) / (N / 2);
+        // Center-weighted tongue height with jitter
+        const baseH = (1 - dx * 0.65) * N * 0.80;
+        const jitter = (rng() - 0.4) * N * 0.35;
+        const peakH = Math.max(3, Math.floor(baseH + jitter));
+        for (let i = 0; i < width && (x + i) < N; i++) {
+            // Slight per-column variation so tongue tips aren't flat
+            cols[x + i] = Math.max(2, peakH - Math.floor(rng() * 3));
+        }
+        x += width + gap;
+    }
+
+    // Paint each column bottom-up with a 6-stop color ramp
+    for (let cx = 0; cx < N; cx++) {
+        const h = cols[cx];
+        if (h <= 0) continue;
+        for (let y = 0; y < h; y++) {
+            const py = N - 1 - y;
+            const yT = y / Math.max(1, h - 1);  // 0 = base, 1 = tip
+            let idx;
+            if      (yT > 0.92) idx = 5;   // dark red tip
+            else if (yT > 0.78) idx = 4;   // red
+            else if (yT > 0.58) idx = 3;   // orange
+            else if (yT > 0.38) idx = 2;   // amber
+            else if (yT > 0.18) idx = 1;   // yellow
+            else                idx = 0;   // hot white base
+            ctx.fillStyle = PAL[idx];
+            ctx.fillRect(cx, py, 1, 1);
+        }
+    }
+
+    // A few bright hot spots low down
+    for (let i = 0; i < 4; i++) {
+        const sx = Math.floor(rng() * N);
+        const sy = N - 1 - Math.floor(rng() * N * 0.35);
+        const pixel = ctx.getImageData(sx, sy, 1, 1).data;
+        if (pixel[3] > 0) {
+            ctx.fillStyle = PAL[0];
+            ctx.fillRect(sx, sy, 1, 1);
+        }
+    }
+
+    const tex = new THREE.CanvasTexture(cv);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    return tex;
+}
+
+const FLAME_FRAMES = [
+    makeFlameFrame(1), makeFlameFrame(2), makeFlameFrame(3),
+    makeFlameFrame(4), makeFlameFrame(5), makeFlameFrame(6),
+];
+
+function makeSmokeTexture() {
+    const N = 32;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = N;
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, N, N);
+    const rng = seededRng('smoke');
+    // Pixel-art puff: filled circle with chunky pixels
+    const cx = N / 2;
+    for (let y = 0; y < N; y++) {
+        for (let x = 0; x < N; x++) {
+            const dx = x - cx, dy = y - cx;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            const r = N / 2;
+            if (d > r) continue;
+            const t = d / r;
+            const alpha = (1 - t) * (1 - t);
+            const noise = rng() * 0.3 + 0.7;
+            const shade = Math.floor(70 + (1 - t) * 70 * noise);
+            const a = Math.floor(alpha * 220 * noise);
+            ctx.fillStyle = 'rgba(' + shade + ',' + shade + ',' + shade + ',' + (a / 255).toFixed(3) + ')';
+            ctx.fillRect(x, y, 1, 1);
+        }
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    return tex;
+}
+
+const SMOKE_TEX = makeSmokeTexture();
+
+// ──────────────────────────────────────────────────────────────
+// Three.js scene setup (Z-up to match FDS)
+// ──────────────────────────────────────────────────────────────
+const container = document.getElementById('viewer');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x8FB8E8);
+scene.fog = new THREE.Fog(0x8FB8E8, 40, 140);
+
+const camera = new THREE.PerspectiveCamera(72, container.clientWidth / container.clientHeight, 0.05, 300);
+camera.up.set(0, 0, 1);
+camera.position.set(7, -8, 1.75);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(container.clientWidth, container.clientHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+scene.add(new THREE.HemisphereLight(0xBEDCFF, 0x6F8F4A, 0.35));
+const sun = new THREE.DirectionalLight(0xfff2da, 0.75);
+sun.position.set(20, -16, 22);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -30; sun.shadow.camera.right = 30;
+sun.shadow.camera.top = 30; sun.shadow.camera.bottom = -30;
+sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 90;
+sun.shadow.bias = -0.0005;
+scene.add(sun);
+
+// Ground
+(function makeGround() {
+    const N = 16;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = N;
+    const ctx = cv.getContext('2d');
+    const rng = seededRng('GRASS');
+    ctx.fillStyle = '#6F934A';
+    ctx.fillRect(0, 0, N, N);
+    for (let i = 0; i < 90; i++) {
+        const x = Math.floor(rng() * N), y = Math.floor(rng() * N);
+        const r = rng();
+        ctx.fillStyle = r < 0.4 ? '#5C7E3C' : (r < 0.7 ? '#80A658' : '#476930');
+        ctx.fillRect(x, y, 1, 1);
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(80, 80);
+
+    const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(160, 160),
+        new THREE.MeshLambertMaterial({ map: tex })
+    );
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const grid = new THREE.GridHelper(160, 160, 0x000000, 0x000000);
+    grid.rotation.x = Math.PI / 2;
+    grid.position.z = 0.005;
+    grid.material.opacity = 0.15;
+    grid.material.transparent = true;
+    scene.add(grid);
+})();
+
+(function addAxis() {
+    const grp = new THREE.Group();
+    const len = 1.0, r = 0.04;
+    const axes = [
+        { color: 0xff4444, dir: new THREE.Vector3(1, 0, 0) },
+        { color: 0x44ff44, dir: new THREE.Vector3(0, 1, 0) },
+        { color: 0x4488ff, dir: new THREE.Vector3(0, 0, 1) },
+    ];
+    axes.forEach(a => {
+        const cyl = new THREE.Mesh(
+            new THREE.CylinderGeometry(r, r, len, 8),
+            new THREE.MeshBasicMaterial({ color: a.color })
+        );
+        cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), a.dir);
+        cyl.position.copy(a.dir).multiplyScalar(len / 2);
+        grp.add(cyl);
+    });
+    scene.add(grp);
+})();
+
+// ──────────────────────────────────────────────────────────────
+// Block storage
+// ──────────────────────────────────────────────────────────────
+const blocks = new Map();
+const blockGroup = new THREE.Group();
+scene.add(blockGroup);
+
+const cellKey = (gx, gy, gz) => gx + ',' + gy + ',' + gz;
+const worldFromGrid = (gx, gy, gz) => [
+    (gx + 0.5) * BLOCK_SIZE, (gy + 0.5) * BLOCK_SIZE, (gz + 0.5) * BLOCK_SIZE,
+];
+const gridFromWorld = (x, y, z) => [
+    Math.floor(x / BLOCK_SIZE), Math.floor(y / BLOCK_SIZE), Math.floor(z / BLOCK_SIZE),
+];
+
+const boxGeo = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+
+const activeAnims = [];
+const breakingMeshes = [];
+const particles = [];
+
+// ──────────────────────────────────────────────────────────────
+// Burner FX: animated flame sprites + flickering light + smoke
+// ──────────────────────────────────────────────────────────────
+const burnerEffects = new Map();   // key -> { flames:[Sprite], light:PointLight, lastSmoke:number }
+const burnerSmoke = [];            // pooled smoke sprites
+
+function disposeBurnerEffects(key) {
+    const fx = burnerEffects.get(key);
+    if (!fx) return;
+    for (const s of fx.flames) {
+        scene.remove(s);
+        s.material.dispose();
+    }
+    if (fx.particles) {
+        for (const p of fx.particles) {
+            scene.remove(p);
+            p.material.dispose();
+        }
+    }
+    if (fx.light) scene.remove(fx.light);
+    burnerEffects.delete(key);
+}
+
+// Small Sprite billboard — used both as side-flame fallback when the top face
+// is blocked and as a single particle in the top-exposed fountain.
+function makeFlameSprite(w, h) {
+    const startFrame = Math.floor(Math.random() * FLAME_FRAMES.length);
+    const mat = new THREE.SpriteMaterial({
+        map: FLAME_FRAMES[startFrame],
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        opacity: 1.0,
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(w, h, 1);
+    sprite.userData = {
+        baseW: w, baseH: h,
+        phase: Math.random() * Math.PI * 2,
+        frameOffset: startFrame,
+        frameRate: 8 + Math.random() * 4,
+    };
+    return sprite;
+}
+
+// Spawn one short-lived flame particle for the fountain.
+const PARTICLE_POOL_PER_BURNER = 60;
+function spawnFlameParticle(fx, x, y, z) {
+    if (fx.particles.length >= PARTICLE_POOL_PER_BURNER) return;
+    const frame = Math.floor(Math.random() * FLAME_FRAMES.length);
+    const mat = new THREE.SpriteMaterial({
+        map: FLAME_FRAMES[frame],
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        opacity: 1.0,
+    });
+    const s = new THREE.Sprite(mat);
+    const r = Math.random() * 0.32;
+    const a = Math.random() * Math.PI * 2;
+    s.position.set(x + Math.cos(a) * r, y + Math.sin(a) * r, z);
+    const startSize = 0.34 + Math.random() * 0.26;
+    s.scale.set(startSize, startSize, 1);
+    s.userData = {
+        life: 0,
+        maxLife: 0.7 + Math.random() * 0.5,
+        vz: 1.6 + Math.random() * 0.8,
+        startSize,
+    };
+    scene.add(s);
+    fx.particles.push(s);
+}
+
+function rebuildBurnerFxAt(gx, gy, gz) {
+    const key = cellKey(gx, gy, gz);
+    disposeBurnerEffects(key);
+    const b = blocks.get(key);
+    if (!b || MATERIALS[b.matIdx].id !== 'BURNER') return;
+
+    const center = worldFromGrid(gx, gy, gz);
+    const fx = {
+        flames: [],          // persistent side-flame sprites (top-blocked case)
+        particles: [],       // active fountain particles (top-exposed case)
+        emitT: 0,
+        emitRate: 0,
+        emitOrigin: [center[0], center[1], center[2]],
+        light: null,
+        lastSmoke: 0,
+        smokeOrigin: [center[0], center[1], center[2] + BLOCK_SIZE],
+        hasTopFlames: false,
+    };
+
+    const topExposed = !blocks.has(cellKey(gx, gy, gz + 1));
+    const sides = [
+        { dx: +1, dy: 0 },
+        { dx: -1, dy: 0 },
+        { dx: 0, dy: +1 },
+        { dx: 0, dy: -1 },
+    ];
+    const anySideExposed = sides.some(s => !blocks.has(cellKey(gx + s.dx, gy + s.dy, gz)));
+
+    if (topExposed) {
+        // Particle fountain — spawn from near the block bottom, rise upward.
+        // Test bench D port: emitRate 40/s, particles live ~1 s rising 1.6-2.4 m.
+        fx.emitRate = 40;
+        fx.emitOrigin = [center[0], center[1], center[2] - BLOCK_SIZE * 0.40];
+        fx.smokeOrigin = [center[0], center[1], center[2] + BLOCK_SIZE * 0.9];
+        fx.hasTopFlames = true;
+    } else if (anySideExposed) {
+        // Top blocked — small side-flame sprites against each exposed side face
+        for (const sd of sides) {
+            if (blocks.has(cellKey(gx + sd.dx, gy + sd.dy, gz))) continue;
+            const s = makeFlameSprite(0.55, 0.90);
+            s.position.set(
+                center[0] + sd.dx * (BLOCK_SIZE * 0.55),
+                center[1] + sd.dy * (BLOCK_SIZE * 0.55),
+                center[2] + BLOCK_SIZE * 0.25
+            );
+            scene.add(s);
+            fx.flames.push(s);
+        }
+        fx.smokeOrigin = [center[0], center[1], center[2] + BLOCK_SIZE * 0.5];
+    }
+    // else: fully enclosed — no flames, no light
+
+    if (topExposed || fx.flames.length > 0) {
+        const light = new THREE.PointLight(0xFF8830, 1.6, 8, 2);
+        light.position.set(center[0], center[1], center[2] + 0.6);
+        light.userData = { basePower: 1.6 };
+        scene.add(light);
+        fx.light = light;
+    }
+
+    burnerEffects.set(key, fx);
+}
+
+function rebuildBurnerFxAround(gx, gy, gz) {
+    // Rebuild burner at this cell (if it is one) and neighbouring burners
+    // (their exposure changed when this cell did).
+    rebuildBurnerFxAt(gx, gy, gz);
+    const dirs = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+    for (const [dx, dy, dz] of dirs) {
+        const nb = blocks.get(cellKey(gx + dx, gy + dy, gz + dz));
+        if (nb && MATERIALS[nb.matIdx].id === 'BURNER') {
+            rebuildBurnerFxAt(gx + dx, gy + dy, gz + dz);
+        }
+    }
+}
+
+function spawnBurnerSmoke(x, y, z) {
+    const mat = new THREE.SpriteMaterial({
+        map: SMOKE_TEX,
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false,
+    });
+    const s = new THREE.Sprite(mat);
+    s.position.set(
+        x + (Math.random() - 0.5) * 0.35,
+        y + (Math.random() - 0.5) * 0.35,
+        z
+    );
+    s.scale.set(0.55, 0.55, 1);
+    s.userData = {
+        vel: new THREE.Vector3(
+            (Math.random() - 0.5) * 0.5,
+            (Math.random() - 0.5) * 0.5,
+            1.4 + Math.random() * 0.4
+        ),
+        life: 0,
+        maxLife: 2.4 + Math.random() * 1.2,
+    };
+    scene.add(s);
+    burnerSmoke.push(s);
+}
+
+function updateBurnerFx(now, dt) {
+    const t = now * 0.001;
+    for (const [key, fx] of burnerEffects) {
+
+        // Emit fountain particles when top is exposed
+        if (fx.emitRate > 0) {
+            fx.emitT += dt;
+            const period = 1 / fx.emitRate;
+            while (fx.emitT > period) {
+                fx.emitT -= period;
+                spawnFlameParticle(fx, fx.emitOrigin[0], fx.emitOrigin[1], fx.emitOrigin[2]);
+            }
+        }
+
+        // Animate active fountain particles
+        for (let i = fx.particles.length - 1; i >= 0; i--) {
+            const p = fx.particles[i];
+            p.userData.life += dt;
+            const u = p.userData.life / p.userData.maxLife;
+            if (u >= 1) {
+                scene.remove(p);
+                p.material.dispose();
+                fx.particles.splice(i, 1);
+                continue;
+            }
+            p.position.z += p.userData.vz * dt;
+            const s = p.userData.startSize * (1 + u * 0.6);
+            p.scale.set(s, s, 1);
+            p.material.opacity = 1 - u;
+        }
+
+        // Animate persistent side flames (top-blocked fallback)
+        for (const f of fx.flames) {
+            const u = f.userData;
+            f.scale.x = u.baseW * (0.88 + 0.14 * Math.sin(t * 9 + u.phase));
+            f.scale.y = u.baseH * (0.94 + 0.10 * Math.cos(t * 12 + u.phase * 1.3));
+            const fi = (Math.floor(t * u.frameRate) + u.frameOffset) % FLAME_FRAMES.length;
+            if (f.material.map !== FLAME_FRAMES[fi]) {
+                f.material.map = FLAME_FRAMES[fi];
+                f.material.needsUpdate = true;
+            }
+        }
+
+        if (fx.light) {
+            fx.light.intensity = fx.light.userData.basePower * (0.75 + 0.35 * Math.random());
+        }
+
+        // Emit smoke from this burner's pre-computed smoke origin
+        fx.lastSmoke += dt;
+        if (fx.lastSmoke > 0.18) {
+            fx.lastSmoke = 0;
+            if (fx.hasTopFlames || fx.flames.length > 0) {
+                spawnBurnerSmoke(fx.smokeOrigin[0], fx.smokeOrigin[1], fx.smokeOrigin[2]);
+            }
+        }
+    }
+    // Animate smoke
+    for (let i = burnerSmoke.length - 1; i >= 0; i--) {
+        const p = burnerSmoke[i];
+        p.userData.life += dt;
+        const u = p.userData.life / p.userData.maxLife;
+        if (u >= 1) {
+            scene.remove(p);
+            p.material.dispose();
+            burnerSmoke.splice(i, 1);
+            continue;
+        }
+        p.position.x += p.userData.vel.x * dt;
+        p.position.y += p.userData.vel.y * dt;
+        p.position.z += p.userData.vel.z * dt;
+        // Drift on a gentle wind
+        p.userData.vel.x += (Math.random() - 0.5) * 0.3 * dt;
+        p.userData.vel.y += (Math.random() - 0.5) * 0.3 * dt;
+        const scale = 0.5 + u * 2.6;
+        p.scale.set(scale, scale, 1);
+        p.material.opacity = 0.55 * (1 - u) * (1 - u);
+    }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Web Audio sound effects — fully synthesized, no external files
+// ──────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────
+// Sound effects — layered synthesis aimed at the Minecraft feel
+// (block sounds are dull thunks; breaks are bandpass-crunch + sub-thump;
+// footsteps are filtered noise + sub-bass; crackles are short bandpass pops)
+// All generated at runtime — no audio files are loaded.
+// ──────────────────────────────────────────────────────────────
+const SFX = {
+    ctx: null,
+    muted: false,
+    ensure() {
+        if (!this.ctx) {
+            const Ctor = window.AudioContext || window.webkitAudioContext;
+            if (Ctor) this.ctx = new Ctor();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+        return this.ctx;
+    },
+    _noiseBuf(ctx, len, decayK) {
+        const buf = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * len)), ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) {
+            d[i] = (Math.random() * 2 - 1) * Math.exp(-i / d.length * decayK);
+        }
+        return buf;
+    },
+
+    place() {
+        if (this.muted) return;
+        const ctx = this.ensure(); if (!ctx) return;
+        const t = ctx.currentTime;
+        // Layer 1 — low square "thunk" with downward pitch slide
+        const baseF = 170 + (Math.random() - 0.5) * 35;
+        const osc = ctx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(baseF, t);
+        osc.frequency.exponentialRampToValueAtTime(baseF * 0.55, t + 0.10);
+        const g1 = ctx.createGain();
+        g1.gain.setValueAtTime(0.20, t);
+        g1.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc.connect(g1).connect(ctx.destination);
+        osc.start(t); osc.stop(t + 0.14);
+
+        // Layer 2 — short attack click (dull noise)
+        const src = ctx.createBufferSource();
+        src.buffer = this._noiseBuf(ctx, 0.035, 10);
+        const f = ctx.createBiquadFilter();
+        f.type = 'lowpass'; f.frequency.value = 750;
+        const g2 = ctx.createGain();
+        g2.gain.value = 0.11;
+        src.connect(f).connect(g2).connect(ctx.destination);
+        src.start(t);
+    },
+
+    break() {
+        if (this.muted) return;
+        const ctx = this.ensure(); if (!ctx) return;
+        const t = ctx.currentTime;
+        // Layer 1 — bandpass-filtered noise crunch with downward filter sweep
+        const len = 0.28;
+        const src = ctx.createBufferSource();
+        src.buffer = this._noiseBuf(ctx, len, 4);
+        const filt = ctx.createBiquadFilter();
+        filt.type = 'bandpass';
+        filt.frequency.setValueAtTime(2400, t);
+        filt.frequency.exponentialRampToValueAtTime(500, t + 0.15);
+        filt.Q.setValueAtTime(1.4, t);
+        const g1 = ctx.createGain();
+        g1.gain.setValueAtTime(0.30, t);
+        g1.gain.exponentialRampToValueAtTime(0.001, t + len);
+        src.connect(filt).connect(g1).connect(ctx.destination);
+        src.start(t);
+
+        // Layer 2 — low sine sub-thump on the attack
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(55, t + 0.08);
+        const g2 = ctx.createGain();
+        g2.gain.setValueAtTime(0.20, t);
+        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.10);
+        osc.connect(g2).connect(ctx.destination);
+        osc.start(t); osc.stop(t + 0.12);
+    },
+
+    footstep() {
+        if (this.muted) return;
+        const ctx = this.ensure(); if (!ctx) return;
+        const t = ctx.currentTime;
+        // Layer 1 — short dull noise (grass/dirt-ish)
+        const src = ctx.createBufferSource();
+        src.buffer = this._noiseBuf(ctx, 0.07, 6);
+        const f = ctx.createBiquadFilter();
+        f.type = 'lowpass'; f.frequency.value = 220 + Math.random() * 80;
+        const g1 = ctx.createGain();
+        g1.gain.value = 0.22;
+        src.connect(f).connect(g1).connect(ctx.destination);
+        src.start(t);
+
+        // Layer 2 — soft sine sub at ~80 Hz for the "weight" of the step
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(85 + Math.random() * 12, t);
+        osc.frequency.exponentialRampToValueAtTime(48, t + 0.05);
+        const g2 = ctx.createGain();
+        g2.gain.setValueAtTime(0.18, t);
+        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+        osc.connect(g2).connect(ctx.destination);
+        osc.start(t); osc.stop(t + 0.08);
+    },
+
+    crackle() {
+        if (this.muted) return;
+        const ctx = this.ensure(); if (!ctx) return;
+        const t = ctx.currentTime;
+        const len = 0.04 + Math.random() * 0.07;
+        const src = ctx.createBufferSource();
+        src.buffer = this._noiseBuf(ctx, len, 10);
+        const f = ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.value = 800 + Math.random() * 1800;
+        f.Q.value = 2.5;
+        const g = ctx.createGain();
+        g.gain.value = 0.06 + Math.random() * 0.05;
+        src.connect(f).connect(g).connect(ctx.destination);
+        src.start(t);
+    },
+};
+
+// Periodic fire crackle when burners exist
+let crackleTimer = 0;
+function updateCrackle(dt) {
+    if (burnerEffects.size === 0) return;
+    crackleTimer -= dt;
+    if (crackleTimer <= 0) {
+        SFX.crackle();
+        crackleTimer = 0.25 + Math.random() * 0.6;
+    }
+}
+
+function makeBlockMaterial(matDef) {
+    const mat = new THREE.MeshLambertMaterial({
+        map: TEX[matDef.id].texture,
+        transparent: !!matDef.transparent,
+        opacity: matDef.opacity != null ? matDef.opacity : 1.0,
+        alphaTest: matDef.transparent ? 0.05 : 0,
+    });
+    mat.userData = { baseOpacity: matDef.opacity != null ? matDef.opacity : 1.0 };
+    return mat;
+}
+
+function placeBlock(gx, gy, gz, matIdx, opts) {
+    opts = opts || {};
+    if (gz < 0) return false;
+    const k = cellKey(gx, gy, gz);
+    const existing = blocks.get(k);
+    const matDef = MATERIALS[matIdx];
+
+    // HOLE placement: convert an existing non-fire block into a HOLE overlay.
+    // FDS &HOLE only does something when it overlaps an &OBST, so we require one
+    // to already be there and remember it so the export can emit both.
+    if (matDef.emit === 'HOLE') {
+        if (!existing) {
+            if (!opts.silent) showToast('HOLE needs a block to cut through');
+            return false;
+        }
+        const exDef = MATERIALS[existing.matIdx];
+        if (exDef.emit === 'HOLE') return false;
+        if (exDef.emit === 'BURNER') {
+            if (!opts.silent) showToast("HOLE can't cut through fire");
+            return false;
+        }
+        existing.underMatIdx = existing.matIdx;
+        existing.matIdx = matIdx;
+        existing.mesh.material.dispose();
+        existing.mesh.material = makeBlockMaterial(matDef);
+        existing.mesh.userData.matIdx = matIdx;
+        if (!opts.silent) {
+            existing.mesh.scale.set(0.05, 0.05, 0.05);
+            existing.mesh.userData.anim = { type: 'place', start: performance.now(), duration: 140 };
+            activeAnims.push(existing.mesh);
+            SFX.place();
+        }
+        sceneDirty = true;
+        return true;
+    }
+
+    if (existing) return false;
+
+    const mesh = new THREE.Mesh(boxGeo, makeBlockMaterial(matDef));
+    const w = worldFromGrid(gx, gy, gz);
+    mesh.position.set(w[0], w[1], w[2]);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData = { gx, gy, gz, matIdx, isBlock: true };
+
+    if (!opts.silent) {
+        mesh.scale.set(0.05, 0.05, 0.05);
+        mesh.userData.anim = { type: 'place', start: performance.now(), duration: 140 };
+        activeAnims.push(mesh);
+    }
+
+    blockGroup.add(mesh);
+    blocks.set(k, { gx, gy, gz, matIdx, mesh });
+    updateBlockCount();
+    if (!opts.silent) {
+        rebuildBurnerFxAround(gx, gy, gz);
+        SFX.place();
+    }
+    sceneDirty = true;
+    return true;
+}
+
+function removeBlock(gx, gy, gz) {
+    const k = cellKey(gx, gy, gz);
+    const b = blocks.get(k);
+    if (!b) return false;
+    // HOLE overlay: left-click uncovers the underlying block instead of deleting.
+    if (MATERIALS[b.matIdx].emit === 'HOLE' && b.underMatIdx != null) {
+        const underIdx = b.underMatIdx;
+        const underDef = MATERIALS[underIdx];
+        b.matIdx = underIdx;
+        b.underMatIdx = undefined;
+        b.mesh.material.dispose();
+        b.mesh.material = makeBlockMaterial(underDef);
+        b.mesh.userData.matIdx = underIdx;
+        b.mesh.scale.set(0.05, 0.05, 0.05);
+        b.mesh.userData.anim = { type: 'place', start: performance.now(), duration: 140 };
+        activeAnims.push(b.mesh);
+        SFX.break();
+        sceneDirty = true;
+        return true;
+    }
+    const wasBurner = MATERIALS[b.matIdx].id === 'BURNER';
+    blocks.delete(k);
+    b.mesh.userData.anim = { type: 'break', start: performance.now(), duration: 130 };
+    b.mesh.material.transparent = true;
+    breakingMeshes.push(b.mesh);
+    spawnBreakParticles(b.mesh.position, MATERIALS[b.matIdx]);
+    updateBlockCount();
+    if (wasBurner) disposeBurnerEffects(k);
+    rebuildBurnerFxAround(gx, gy, gz);
+    SFX.break();
+    sceneDirty = true;
+    return true;
+}
+
+function spawnBreakParticles(centerVec, matDef) {
+    const n = 10;
+    const partGeo = new THREE.BoxGeometry(0.14, 0.14, 0.14);
+    for (let i = 0; i < n; i++) {
+        const m = new THREE.MeshLambertMaterial({
+            map: TEX[matDef.id].texture,
+            transparent: true,
+            opacity: 1,
+        });
+        const p = new THREE.Mesh(partGeo, m);
+        p.position.set(
+            centerVec.x + (Math.random() - 0.5) * 0.6,
+            centerVec.y + (Math.random() - 0.5) * 0.6,
+            centerVec.z + (Math.random() - 0.5) * 0.6
+        );
+        p.userData.vel = new THREE.Vector3(
+            (Math.random() - 0.5) * 3.5,
+            (Math.random() - 0.5) * 3.5,
+            Math.random() * 3.0 + 1.5
+        );
+        p.userData.spin = new THREE.Vector3(
+            (Math.random() - 0.5) * 8,
+            (Math.random() - 0.5) * 8,
+            (Math.random() - 0.5) * 8
+        );
+        p.userData.life = 0;
+        p.userData.maxLife = 0.55 + Math.random() * 0.25;
+        scene.add(p);
+        particles.push(p);
+    }
+}
+
+function easeOutBack(t) {
+    const c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+function updateAnimations(now, dt) {
+    for (let i = activeAnims.length - 1; i >= 0; i--) {
+        const m = activeAnims[i];
+        const a = m.userData.anim;
+        if (!a) { activeAnims.splice(i, 1); continue; }
+        const t = Math.min(1, (now - a.start) / a.duration);
+        const s = Math.max(0.05, easeOutBack(t));
+        m.scale.set(s, s, s);
+        if (t >= 1) {
+            m.scale.set(1, 1, 1);
+            m.userData.anim = null;
+            activeAnims.splice(i, 1);
+        }
+    }
+    for (let i = breakingMeshes.length - 1; i >= 0; i--) {
+        const m = breakingMeshes[i];
+        const a = m.userData.anim;
+        if (!a) { breakingMeshes.splice(i, 1); continue; }
+        const t = Math.min(1, (now - a.start) / a.duration);
+        const s = Math.max(0.001, 1 - t);
+        m.scale.set(s, s, s);
+        const baseOp = (m.material.userData && m.material.userData.baseOpacity) || 1;
+        m.material.opacity = baseOp * (1 - t);
+        if (t >= 1) {
+            blockGroup.remove(m);
+            m.material.dispose();
+            breakingMeshes.splice(i, 1);
+        }
+    }
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.userData.life += dt;
+        const t = p.userData.life / p.userData.maxLife;
+        if (t >= 1) {
+            scene.remove(p);
+            p.geometry.dispose();
+            p.material.dispose();
+            particles.splice(i, 1);
+            continue;
+        }
+        p.userData.vel.z -= 14 * dt;
+        p.position.x += p.userData.vel.x * dt;
+        p.position.y += p.userData.vel.y * dt;
+        p.position.z += p.userData.vel.z * dt;
+        if (p.position.z < 0.07) {
+            p.position.z = 0.07;
+            p.userData.vel.z = -p.userData.vel.z * 0.25;
+            p.userData.vel.x *= 0.55;
+            p.userData.vel.y *= 0.55;
+        }
+        p.rotation.x += p.userData.spin.x * dt;
+        p.rotation.y += p.userData.spin.y * dt;
+        p.rotation.z += p.userData.spin.z * dt;
+        p.material.opacity = Math.max(0, 1 - t * 1.3);
+    }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Hover + ghost
+// ──────────────────────────────────────────────────────────────
+const hoverEdge = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(BLOCK_SIZE * 1.005, BLOCK_SIZE * 1.005, BLOCK_SIZE * 1.005)),
+    new THREE.LineBasicMaterial({ color: 0x000000 })
+);
+hoverEdge.visible = false;
+hoverEdge.renderOrder = 5;
+scene.add(hoverEdge);
+
+const ghostMesh = new THREE.Mesh(
+    boxGeo,
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.32, depthWrite: false })
+);
+ghostMesh.visible = false;
+ghostMesh.renderOrder = 4;
+scene.add(ghostMesh);
+
+const raycaster = new THREE.Raycaster();
+raycaster.far = 5.5;
+const forwardVec = new THREE.Vector3();
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+
+let hoverTarget = null;
+let ghostTarget = null;
+
+function updateRaycast() {
+    forwardVec.set(0, 0, -1).applyQuaternion(camera.quaternion);
+    raycaster.set(camera.position, forwardVec);
+
+    const meshes = [];
+    blockGroup.children.forEach(m => { if (m.userData.isBlock) meshes.push(m); });
+    const hits = raycaster.intersectObjects(meshes, false);
+
+    if (hits.length > 0) {
+        const hit = hits[0];
+        const d = hit.object.userData;
+        hoverTarget = { gx: d.gx, gy: d.gy, gz: d.gz };
+        const wp = worldFromGrid(d.gx, d.gy, d.gz);
+        hoverEdge.position.set(wp[0], wp[1], wp[2]);
+        hoverEdge.visible = true;
+
+        // HOLE applies to the hovered block, not the adjacent empty cell —
+        // suppress the adjacency ghost so it doesn't suggest a place that won't work.
+        const isHole = MATERIALS[selectedSlot].emit === 'HOLE';
+        const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+        const gxN = d.gx + Math.round(n.x);
+        const gyN = d.gy + Math.round(n.y);
+        const gzN = d.gz + Math.round(n.z);
+        ghostTarget = isHole ? null : { gx: gxN, gy: gyN, gz: gzN };
+        const gp = worldFromGrid(gxN, gyN, gzN);
+        ghostMesh.position.set(gp[0], gp[1], gp[2]);
+        ghostMesh.material.color.setHex(MATERIALS[selectedSlot].hex);
+        ghostMesh.visible = !isHole && gzN >= 0 && !blocks.has(cellKey(gxN, gyN, gzN));
+    } else {
+        hoverTarget = null;
+        hoverEdge.visible = false;
+
+        const isHole = MATERIALS[selectedSlot].emit === 'HOLE';
+        const gp = new THREE.Vector3();
+        if (!isHole && raycaster.ray.intersectPlane(groundPlane, gp)) {
+            const dist = camera.position.distanceTo(gp);
+            if (dist < raycaster.far) {
+                const g = gridFromWorld(gp.x, gp.y, 0);
+                ghostTarget = { gx: g[0], gy: g[1], gz: 0 };
+                const wp = worldFromGrid(g[0], g[1], 0);
+                ghostMesh.position.set(wp[0], wp[1], wp[2]);
+                ghostMesh.material.color.setHex(MATERIALS[selectedSlot].hex);
+                ghostMesh.visible = !blocks.has(cellKey(g[0], g[1], 0));
+            } else {
+                ghostTarget = null;
+                ghostMesh.visible = false;
+            }
+        } else {
+            ghostTarget = null;
+            ghostMesh.visible = false;
+        }
+    }
+
+    document.getElementById('info-pos').textContent =
+        camera.position.x.toFixed(1) + ', ' +
+        camera.position.y.toFixed(1) + ', ' +
+        camera.position.z.toFixed(1);
+    const tEl = document.getElementById('info-target');
+    if (hoverTarget) {
+        const b = blocks.get(cellKey(hoverTarget.gx, hoverTarget.gy, hoverTarget.gz));
+        tEl.textContent = b ? MATERIALS[b.matIdx].id : '—';
+    } else if (ghostTarget) {
+        tEl.textContent = 'ground';
+    } else {
+        tEl.textContent = '—';
+    }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Pointer-lock controls
+// ──────────────────────────────────────────────────────────────
+const keys = {};
+const yawPitch = { yaw: 0, pitch: 0 };
+let pointerLocked = false;
+
+function setCameraOrientation() {
+    const qBase = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+    const qPitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), yawPitch.pitch);
+    const qYaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), yawPitch.yaw);
+    camera.quaternion.copy(qYaw).multiply(qPitch).multiply(qBase);
+}
+
+(function initOrientation() {
+    const target = new THREE.Vector3(0, 0, 1.0);
+    const dir = new THREE.Vector3().subVectors(target, camera.position).normalize();
+    yawPitch.yaw = Math.atan2(-dir.x, dir.y);
+    yawPitch.pitch = Math.asin(dir.z);
+    setCameraOrientation();
+})();
+
+function requestLock() {
+    // Just pointer lock — fullscreen is a separate opt-in button so the user
+    // gesture isn't consumed and Resume locks in one click.
+    const fn = renderer.domElement.requestPointerLock || renderer.domElement.mozRequestPointerLock;
+    if (fn) fn.call(renderer.domElement);
+}
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement &&
+        !document.webkitFullscreenElement &&
+        !document.mozFullScreenElement) {
+        const el = document.documentElement;
+        const enter = el.requestFullscreen
+                   || el.webkitRequestFullscreen
+                   || el.mozRequestFullScreen
+                   || el.msRequestFullscreen;
+        if (enter) {
+            const p = enter.call(el);
+            if (p && typeof p.catch === 'function') p.catch(() => {});
+        }
+    } else {
+        const exit = document.exitFullscreen
+                  || document.webkitExitFullscreen
+                  || document.mozCancelFullScreen
+                  || document.msExitFullscreen;
+        if (exit) exit.call(document);
+    }
+}
+
+document.addEventListener('pointerlockchange', () => {
+    pointerLocked = document.pointerLockElement === renderer.domElement;
+    document.getElementById('overlay').classList.toggle('hidden', pointerLocked);
+    document.getElementById('crosshair').classList.toggle('active', pointerLocked);
+    document.getElementById('esc-hint').classList.toggle('active', pointerLocked);
+    if (pointerLocked) {
+        const sb = document.getElementById('start-btn');
+        if (sb) sb.textContent = 'Resume';
+    }
+    if (pointerLocked && document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+    }
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (!pointerLocked) return;
+    const sens = 0.0024;
+    yawPitch.yaw -= e.movementX * sens;
+    yawPitch.pitch -= e.movementY * sens;
+    const lim = Math.PI / 2 - 0.001;
+    yawPitch.pitch = Math.max(-lim, Math.min(lim, yawPitch.pitch));
+    setCameraOrientation();
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    keys[e.code] = true;
+    if (e.code.startsWith('Digit')) {
+        const n = parseInt(e.code.slice(5), 10) - 1;
+        if (n >= 0 && n < MATERIALS.length) selectSlot(n);
+    }
+    if (e.code === 'Space') e.preventDefault();
+});
+document.addEventListener('keyup', (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    keys[e.code] = false;
+});
+
+renderer.domElement.addEventListener('mousedown', (e) => {
+    if (!pointerLocked) return;
+    if (e.button === 0 && hoverTarget) {
+        removeBlock(hoverTarget.gx, hoverTarget.gy, hoverTarget.gz);
+    } else if (e.button === 2) {
+        // HOLE is an overlay on the hovered block, not a new cell adjacent to it.
+        if (MATERIALS[selectedSlot].emit === 'HOLE') {
+            if (hoverTarget) {
+                placeBlock(hoverTarget.gx, hoverTarget.gy, hoverTarget.gz, selectedSlot);
+            } else {
+                showToast('HOLE needs a block to cut through');
+            }
+        } else if (ghostTarget) {
+            placeBlock(ghostTarget.gx, ghostTarget.gy, ghostTarget.gz, selectedSlot);
+        }
+    }
+});
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+document.addEventListener('wheel', (e) => {
+    if (!pointerLocked) return;
+    const dir = e.deltaY > 0 ? 1 : -1;
+    selectSlot((selectedSlot + dir + MATERIALS.length) % MATERIALS.length);
+});
+
+let _walkPhase = 0;
+let _walkBob = 0;          // current bob offset added to camera.position.z
+let _stepLastSign = 0;     // detect bob zero-crossings for footstep cadence
+
+function updateMovement(dt) {
+    if (!pointerLocked) return;
+    // Remove the bob from the previous frame so user-controlled Z (Space/Shift) stays clean
+    camera.position.z -= _walkBob;
+    _walkBob = 0;
+
+    const sprinting = (keys['ControlLeft'] || keys['ControlRight']);
+    const speed = (sprinting ? 7.0 : 4.3) * dt;
+    const fwd = new THREE.Vector3(-Math.sin(yawPitch.yaw), Math.cos(yawPitch.yaw), 0);
+    const rt  = new THREE.Vector3( Math.cos(yawPitch.yaw), Math.sin(yawPitch.yaw), 0);
+    const v = new THREE.Vector3();
+    if (keys['KeyW']) v.add(fwd);
+    if (keys['KeyS']) v.sub(fwd);
+    if (keys['KeyD']) v.add(rt);
+    if (keys['KeyA']) v.sub(rt);
+    if (keys['Space']) v.z += 1;
+    if (keys['ShiftLeft'] || keys['ShiftRight']) v.z -= 1;
+
+    const horizMag = Math.hypot(v.x, v.y);
+
+    if (v.lengthSq() > 0) {
+        v.normalize().multiplyScalar(speed);
+        camera.position.add(v);
+    }
+    if (camera.position.z < 0.4) camera.position.z = 0.4;
+
+    // Walk bob + footsteps any time you move horizontally
+    // (Space/Shift suppresses footsteps — that counts as "flying" like Minecraft creative.)
+    const verticalInput = !!(keys['Space'] || keys['ShiftLeft'] || keys['ShiftRight']);
+    if (horizMag > 0.05) {
+        _walkPhase += dt * (sprinting ? 11 : 8);
+        const sinP = Math.sin(_walkPhase);
+        _walkBob = sinP * 0.045;
+        camera.position.z += _walkBob;
+        // Footstep on each negative-to-positive zero crossing (one per stride)
+        const sign = sinP >= 0 ? 1 : -1;
+        if (sign !== _stepLastSign && sign === 1 && !verticalInput) {
+            SFX.footstep();
+        }
+        _stepLastSign = sign;
+    } else {
+        _walkPhase = 0;
+        _stepLastSign = 0;
+    }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Hotbar UI
+// ──────────────────────────────────────────────────────────────
+function buildHotbar() {
+    const hb = document.getElementById('hotbar');
+    hb.innerHTML = '';
+    MATERIALS.forEach((m, i) => {
+        const slot = document.createElement('div');
+        slot.className = 'slot' + (i === selectedSlot ? ' active' : '');
+        slot.dataset.idx = i;
+        slot.title = m.label + ' — ' + m.desc;
+
+        const num = document.createElement('div');
+        num.className = 'num';
+        num.textContent = (i + 1);
+        slot.appendChild(num);
+
+        const swatch = document.createElement('canvas');
+        swatch.className = 'swatch';
+        swatch.width = swatch.height = 16;
+        const ctx = swatch.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(TEX[m.id].canvas, 0, 0);
+        slot.appendChild(swatch);
+
+        slot.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectSlot(i);
+        });
+        slot.addEventListener('mouseenter', () => showSlotTooltip(i));
+        slot.addEventListener('mouseleave', hideSlotTooltip);
+        hb.appendChild(slot);
+    });
+}
+function selectSlot(i) {
+    selectedSlot = i;
+    document.querySelectorAll('.slot').forEach((s, idx) => s.classList.toggle('active', idx === i));
+    document.getElementById('info-mat').textContent = MATERIALS[i].id;
+}
+
+function showSlotTooltip(i) {
+    const tt = document.getElementById('slot-tooltip');
+    tt.querySelector('.tt-name').textContent = MATERIALS[i].label;
+    tt.querySelector('.tt-desc').textContent = MATERIALS[i].desc;
+    tt.classList.add('show');
+}
+function hideSlotTooltip() {
+    document.getElementById('slot-tooltip').classList.remove('show');
+}
+buildHotbar();
+
+function updateBlockCount() {
+    const n = blocks.size;
+    document.getElementById('block-count').textContent = n + (n === 1 ? ' block' : ' blocks');
+}
+
+function showToast(msg, ms) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(() => t.classList.remove('show'), ms || 2200);
+}
+
+// ──────────────────────────────────────────────────────────────
+// Overlay / start
+// ──────────────────────────────────────────────────────────────
+document.getElementById('start-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    requestLock();
+});
+document.getElementById('overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'overlay') requestLock();
+});
+
+// ──────────────────────────────────────────────────────────────
+// Reset / Export — shared handlers wired to both top-bar + overlay
+// ──────────────────────────────────────────────────────────────
+function doReset() {
+    if (blocks.size === 0) { showToast('Nothing to reset'); return; }
+    if (!confirm('Remove all ' + blocks.size + ' blocks?')) return;
+    Array.from(blocks.values()).forEach(b => removeBlock(b.gx, b.gy, b.gz));
+}
+function doExport() {
+    const chid = (document.getElementById('chid-input').value || 'my_scene')
+        .trim().replace(/\s+/g, '_').replace(/[^A-Za-z0-9_]/g, '');
+    const tend = parseFloat(document.getElementById('tend-input').value || '60');
+    const cell = parseFloat(document.getElementById('cell-input').value || '0.25');
+    const safeChid = chid || 'my_scene';
+    const fds = generateFDS(safeChid, isFinite(tend) && tend > 0 ? tend : 60, isFinite(cell) && cell > 0 ? cell : 0.25);
+    const blob = new Blob([fds], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = safeChid + '.fds';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    showToast('Exported ' + safeChid + '.fds  ·  ' + blocks.size + ' block' + (blocks.size === 1 ? '' : 's'));
+}
+
+function wireButton(id, handler) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handler();
+    });
+}
+wireButton('reset-btn',      doReset);
+wireButton('export-btn',     doExport);
+wireButton('overlay-reset',  doReset);
+wireButton('overlay-export', doExport);
+
+// ──────────────────────────────────────────────────────────────
+// Scene persistence — autosave to localStorage + manual Save/Load
+// ──────────────────────────────────────────────────────────────
+let sceneDirty = false;
+const AUTOSAVE_KEY = 'fdscraft.autosave.v1';
+const AUTOSAVE_INTERVAL_MS = 30 * 1000;
+const SCENE_FORMAT_VERSION = 1;
+
+// Mark dirty when CHID / T_END / cell / time slider changes too
+['chid-input', 'tend-input', 'cell-input', 'time-slider'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', () => { sceneDirty = true; });
+});
+
+function serializeScene() {
+    // Compact form: [gx, gy, gz, matIdx]  — HOLE overlays add a 5th element
+    // with the underlying material index so they can be restored faithfully.
+    const blockList = [];
+    for (const b of blocks.values()) {
+        const entry = [b.gx, b.gy, b.gz, b.matIdx];
+        if (b.underMatIdx != null) entry.push(b.underMatIdx);
+        blockList.push(entry);
+    }
+    return {
+        version: SCENE_FORMAT_VERSION,
+        app: 'FDS Craft',
+        savedAt: new Date().toISOString(),
+        chid: document.getElementById('chid-input').value,
+        tend: parseFloat(document.getElementById('tend-input').value),
+        cell: parseFloat(document.getElementById('cell-input').value),
+        timeOfDay: parseFloat(document.getElementById('time-slider').value),
+        blockCount: blockList.length,
+        blocks: blockList,
+    };
+}
+
+function deserializeScene(data, opts) {
+    opts = opts || {};
+    if (!data || data.version !== SCENE_FORMAT_VERSION || !Array.isArray(data.blocks)) {
+        throw new Error('Not a valid FDS Craft scene file (version mismatch).');
+    }
+    // Wipe current blocks instantly (no break animation — restoring should feel snappy)
+    for (const b of Array.from(blocks.values())) {
+        scene.remove(b.mesh.parent === blockGroup ? b.mesh : b.mesh);
+        blockGroup.remove(b.mesh);
+        b.mesh.material.dispose();
+    }
+    blocks.clear();
+    // Dispose all existing burner FX (and any orphaned particles)
+    for (const k of Array.from(burnerEffects.keys())) disposeBurnerEffects(k);
+
+    // Restore UI fields
+    if (typeof data.chid === 'string') document.getElementById('chid-input').value = data.chid;
+    if (typeof data.tend === 'number')  document.getElementById('tend-input').value = data.tend;
+    if (typeof data.cell === 'number')  document.getElementById('cell-input').value = data.cell;
+    if (typeof data.timeOfDay === 'number') {
+        const slider = document.getElementById('time-slider');
+        slider.value = data.timeOfDay;
+        updateTimeOfDay(parseFloat(slider.value));
+    }
+
+    // Restore blocks silently (no animation, no sound, defer burner FX).
+    // For HOLE overlays (5-tuple), place the under-block first then convert it.
+    let skipped = 0;
+    for (const entry of data.blocks) {
+        if (!Array.isArray(entry) || entry.length < 4) continue;
+        const [gx, gy, gz, matIdx, underMatIdx] = entry;
+        if (matIdx < 0 || matIdx >= MATERIALS.length) continue;
+        if (MATERIALS[matIdx].emit === 'HOLE') {
+            if (underMatIdx == null || underMatIdx < 0 || underMatIdx >= MATERIALS.length
+                || MATERIALS[underMatIdx].emit === 'HOLE'
+                || MATERIALS[underMatIdx].emit === 'BURNER') {
+                skipped++;
+                continue;  // legacy bare HOLE — no longer valid
+            }
+            placeBlock(gx, gy, gz, underMatIdx, { silent: true });
+            placeBlock(gx, gy, gz, matIdx,     { silent: true });
+        } else {
+            placeBlock(gx, gy, gz, matIdx, { silent: true });
+        }
+    }
+    if (skipped > 0) {
+        console.warn('FDS Craft: dropped ' + skipped + ' legacy HOLE block(s) — HOLEs now require an underlying block.');
+    }
+    // Now batch-rebuild burner FX once
+    for (const b of blocks.values()) {
+        if (MATERIALS[b.matIdx].id === 'BURNER') rebuildBurnerFxAt(b.gx, b.gy, b.gz);
+    }
+    sceneDirty = false;
+    return data.blocks.length;
+}
+
+function autosave() {
+    if (!sceneDirty) return;
+    try {
+        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(serializeScene()));
+        sceneDirty = false;
+    } catch (e) {
+        console.warn('FDS Craft autosave failed:', e);
+    }
+}
+setInterval(autosave, AUTOSAVE_INTERVAL_MS);
+// Also save on page hide (tab switch, close) so you don't lose < 30 s of work
+window.addEventListener('beforeunload', autosave);
+window.addEventListener('pagehide', autosave);
+
+// Restore autosave on first load (silent + toast)
+(function restoreAutosave() {
+    try {
+        const raw = localStorage.getItem(AUTOSAVE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (!data || data.version !== SCENE_FORMAT_VERSION) return;
+        if (!Array.isArray(data.blocks) || data.blocks.length === 0) return;
+        const n = deserializeScene(data);
+        // Age string
+        const age = Math.floor((Date.now() - new Date(data.savedAt).getTime()) / 1000);
+        const ageStr = age < 60 ? age + 's ago'
+                     : age < 3600 ? Math.floor(age / 60) + 'm ago'
+                     : Math.floor(age / 3600) + 'h ago';
+        showToast('Restored ' + n + ' block' + (n === 1 ? '' : 's') + ' from autosave (' + ageStr + ')', 4500);
+    } catch (e) {
+        console.warn('FDS Craft restore failed:', e);
+    }
+})();
+
+// Wrap doReset to also clear the autosave (next reload = fresh)
+const _origDoReset = doReset;
+doReset = function () {
+    _origDoReset();
+    try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
+};
+// Re-wire the buttons since doReset reference changed
+wireButton('reset-btn',     doReset);
+wireButton('overlay-reset', doReset);
+
+// Manual Save → download .fdscraft JSON file
+function doSaveScene() {
+    if (blocks.size === 0) { showToast('Nothing to save — place some blocks first.'); return; }
+    const chid = (document.getElementById('chid-input').value || 'scene')
+        .trim().replace(/\s+/g, '_').replace(/[^A-Za-z0-9_]/g, '') || 'scene';
+    const data = serializeScene();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = chid + '.fdscraft.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    showToast('Saved ' + chid + '.fdscraft.json (' + data.blockCount + ' blocks)');
+}
+
+// Manual Load → file picker → restore
+function doLoadScene() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.fdscraft,application/json';
+    input.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const data = JSON.parse(reader.result);
+                const n = deserializeScene(data);
+                showToast('Loaded ' + n + ' block' + (n === 1 ? '' : 's') + ' from ' + file.name, 4000);
+            } catch (err) {
+                alert('Could not load scene: ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+    });
+    input.click();
+}
+wireButton('overlay-save', doSaveScene);
+wireButton('overlay-load', doLoadScene);
+
+// ──────────────────────────────────────────────────────────────
+// Help modal
+// ──────────────────────────────────────────────────────────────
+(function buildHelpTable() {
+    const tbl = document.getElementById('help-mat-table');
+    if (!tbl) return;
+    for (const m of MATERIALS) {
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td');
+        const sw = document.createElement('span');
+        sw.className = 'mat-swatch';
+        sw.style.backgroundImage = 'url(' + TEX[m.id].canvas.toDataURL() + ')';
+        sw.style.backgroundSize = 'cover';
+        td1.appendChild(sw);
+        td1.appendChild(document.createTextNode(m.label));
+        tr.appendChild(td1);
+        const td2 = document.createElement('td');
+        const fdsLine = m.emit === 'HOLE'
+            ? '&HOLE'
+            : (m.emit === 'BURNER'
+                ? "&OBST SURF_ID='BURNER' (HRRPUA on every face)"
+                : "&OBST SURF_ID='" + m.id + "'");
+        td2.innerHTML = '<code>' + fdsLine + '</code><br><span style="color:#bbb;font-size:15px;">' + m.desc + '</span>';
+        tr.appendChild(td2);
+        tbl.appendChild(tr);
+    }
+})();
+function openHelp() {
+    document.getElementById('help-modal').classList.remove('hidden');
+}
+function closeHelp() {
+    document.getElementById('help-modal').classList.add('hidden');
+}
+function openCredits() {
+    document.getElementById('credits-modal').classList.remove('hidden');
+}
+function closeCredits() {
+    document.getElementById('credits-modal').classList.add('hidden');
+}
+wireButton('help-btn',        openHelp);
+wireButton('overlay-help',    openHelp);
+wireButton('help-close',      closeHelp);
+wireButton('overlay-credits', openCredits);
+wireButton('credits-close',   closeCredits);
+document.getElementById('credits-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'credits-modal') closeCredits();
+});
+wireButton('fs-btn',          toggleFullscreen);
+wireButton('overlay-fullscreen', toggleFullscreen);
+
+// Force the renderer to resize whenever fullscreen enters/exits — the canvas
+// otherwise stays at its old dimensions and leaves a gray bar at the bottom.
+function _onFullscreenChange() {
+    // Defer to next frame so the browser has finished layout.
+    requestAnimationFrame(() => {
+        const w = container.clientWidth, h = container.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h, false);
+    });
+}
+document.addEventListener('fullscreenchange',       _onFullscreenChange);
+document.addEventListener('webkitfullscreenchange', _onFullscreenChange);
+document.addEventListener('mozfullscreenchange',    _onFullscreenChange);
+document.getElementById('help-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'help-modal') closeHelp();
+});
+
+// ──────────────────────────────────────────────────────────────
+// Mute toggle
+// ──────────────────────────────────────────────────────────────
+(function setupMute() {
+    const btn = document.getElementById('mute-btn');
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        SFX.muted = !SFX.muted;
+        btn.classList.toggle('muted', SFX.muted);
+        btn.title = SFX.muted ? 'Audio muted (click to unmute)' : 'Mute audio';
+        showToast(SFX.muted ? 'Audio muted' : 'Audio on');
+    });
+})();
+
+// ──────────────────────────────────────────────────────────────
+// Time of day — sky, sun, ambient, stars
+// ──────────────────────────────────────────────────────────────
+const SKY_DAY   = new THREE.Color(0x8FB8E8);
+const SKY_DUSK  = new THREE.Color(0xE48040);
+const SKY_NIGHT = new THREE.Color(0x0A0F22);
+
+// ── Minecraft-style star field ────────────────────────────────
+// Pixel-square stars on a hemisphere, attached to camera so they don't parallax.
+let starField = null;
+(function buildStars() {
+    const STAR_COUNT = 400;
+    const positions = new Float32Array(STAR_COUNT * 3);
+    const R = 90;
+    for (let i = 0; i < STAR_COUNT; i++) {
+        // Random direction in upper hemisphere (slightly above horizon line)
+        const u = Math.random();
+        const v = 0.02 + Math.random() * 0.96;
+        const theta = u * Math.PI * 2;
+        const phi = Math.acos(1 - v);   // bias toward higher altitudes
+        const z = Math.cos(phi) * R;
+        const r = Math.sin(phi) * R;
+        positions[i*3]   = Math.cos(theta) * r;
+        positions[i*3+1] = Math.sin(theta) * r;
+        positions[i*3+2] = Math.max(2, z); // never below horizon
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    // Tiny pixel-square texture for that crisp Minecraft star look
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 4;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 4, 4);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+
+    const mat = new THREE.PointsMaterial({
+        size: 2.0,
+        map: tex,
+        transparent: true,
+        opacity: 0,
+        sizeAttenuation: false,
+        depthWrite: false,
+    });
+    starField = new THREE.Points(geo, mat);
+    starField.renderOrder = -1;
+    scene.add(starField);
+})();
+
+function updateTimeOfDay(hour) {
+    // hour: 0–24. Sun rises at 6, overhead at 12, sets at 18.
+    const display = document.getElementById('time-display');
+    if (display) {
+        const h = Math.floor(hour);
+        const m = Math.floor((hour - h) * 60);
+        display.textContent = (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m);
+    }
+
+    // Full-circle sun: ang=0 at hour 6 (east horizon), π/2 at noon, π at hour 18
+    // (west horizon), 3π/2 at midnight (nadir, below the world).
+    const ang = ((hour - 6) / 24) * Math.PI * 2;
+    const sunDist = 25;
+    sun.position.set(-Math.cos(ang) * sunDist, -10, Math.sin(ang) * sunDist);
+
+    // sunHeight: -1 at midnight, 0 at horizon, +1 at noon
+    const sunHeight = Math.sin(ang);
+    const dayFactor = Math.max(0, sunHeight);          // 0 night, 1 noon
+
+    // Dusk peaks ONLY within 2 h of sunrise (06:00) or sunset (18:00).
+    // Wraps correctly across midnight.
+    const distToSunrise = Math.min(Math.abs(hour - 6),  Math.abs(hour - 30), Math.abs(hour + 18));
+    const distToSunset  = Math.min(Math.abs(hour - 18), Math.abs(hour - -6), Math.abs(hour + 6));
+    const distToHorizon = Math.min(distToSunrise, distToSunset);
+    const duskFactor = Math.max(0, 1 - distToHorizon / 2);
+
+    // Lights
+    sun.intensity = 0.05 + 0.85 * dayFactor;
+    sun.color.setHex(duskFactor > 0.4 ? 0xFFB070 : 0xFFF2DA);
+
+    // Sky colour: pure night, twilight blend, or daytime blend
+    const sky = new THREE.Color();
+    if (dayFactor > 0.05) {
+        // Day — blue, tinted orange near horizon transitions
+        sky.copy(SKY_DAY).lerp(SKY_DUSK, duskFactor * 0.55);
+    } else if (duskFactor > 0.02) {
+        // Twilight — dark night blue + dusk orange
+        sky.copy(SKY_NIGHT).lerp(SKY_DUSK, duskFactor * 0.65);
+    } else {
+        // Deep night — pure dark blue
+        sky.copy(SKY_NIGHT);
+    }
+    scene.background = sky;
+    scene.fog.color = sky;
+
+    // Stars: visible only when sun is well below horizon AND dusk has faded
+    if (starField) {
+        const nightFactor = Math.max(0, -sunHeight);   // 0 dawn, 1 midnight
+        starField.material.opacity = Math.max(0, nightFactor - duskFactor * 0.7);
+    }
+}
+
+(function setupTimeSlider() {
+    const slider = document.getElementById('time-slider');
+    if (!slider) return;
+    slider.addEventListener('input', (e) => {
+        e.stopPropagation();
+        updateTimeOfDay(parseFloat(slider.value));
+    });
+    // Prevent slider from grabbing keyboard movement keys
+    slider.addEventListener('keydown', (e) => e.stopPropagation());
+    updateTimeOfDay(parseFloat(slider.value));
+})();
+
+// ──────────────────────────────────────────────────────────────
+// FDS export
+// ──────────────────────────────────────────────────────────────
+function mergeRunsX(list) {
+    const rows = new Map();
+    for (const b of list) {
+        const k = b.gy + ',' + b.gz;
+        if (!rows.has(k)) rows.set(k, []);
+        rows.get(k).push(b);
+    }
+    const runs = [];
+    for (const arr of rows.values()) {
+        arr.sort((a, b) => a.gx - b.gx);
+        let s = arr[0], last = arr[0];
+        for (let i = 1; i < arr.length; i++) {
+            if (arr[i].gx === last.gx + 1) { last = arr[i]; continue; }
+            runs.push({ gx0: s.gx, gx1: last.gx + 1, gy: s.gy, gz: s.gz });
+            s = arr[i]; last = arr[i];
+        }
+        runs.push({ gx0: s.gx, gx1: last.gx + 1, gy: s.gy, gz: s.gz });
+    }
+    return runs;
+}
+
+const fmt = x => x.toFixed(2);
+
+function generateFDS(chid, tend, fdsCell) {
+    const lines = [];
+
+    if (blocks.size === 0) {
+        lines.push("! Empty scene — no blocks placed");
+        lines.push("&HEAD CHID='" + chid + "', TITLE='Empty scene from FDS Craft' /");
+        lines.push("&TIME T_END=" + tend + " /");
+        lines.push("&MESH ID='Mesh1', IJK=20,20,12, XB=-2.5,2.5,-2.5,2.5,0.0,3.0 /");
+        lines.push("&VENT MB='ZMAX', SURF_ID='OPEN' /");
+        lines.push("&TAIL /");
+        return lines.join('\n') + '\n';
+    }
+
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (const b of blocks.values()) {
+        if (b.gx < minX) minX = b.gx;
+        if (b.gx + 1 > maxX) maxX = b.gx + 1;
+        if (b.gy < minY) minY = b.gy;
+        if (b.gy + 1 > maxY) maxY = b.gy + 1;
+        if (b.gz < minZ) minZ = b.gz;
+        if (b.gz + 1 > maxZ) maxZ = b.gz + 1;
+    }
+    // Padding so the fire plume develops and smoke drifts before hitting an
+    // OPEN boundary. Plumes typically need 3-5 m of clearance — keep generous.
+    const padXY = 4, padZ = 5;
+    const xLo = (minX - padXY) * BLOCK_SIZE;
+    const xHi = (maxX + padXY) * BLOCK_SIZE;
+    const yLo = (minY - padXY) * BLOCK_SIZE;
+    const yHi = (maxY + padXY) * BLOCK_SIZE;
+    const zLo = 0;
+    const zHi = (maxZ + padZ) * BLOCK_SIZE;
+    const ni = Math.max(1, Math.round((xHi - xLo) / fdsCell));
+    const nj = Math.max(1, Math.round((yHi - yLo) / fdsCell));
+    const nk = Math.max(1, Math.round((zHi - zLo) / fdsCell));
+
+    const byMat = new Map();
+    for (const b of blocks.values()) {
+        if (!byMat.has(b.matIdx)) byMat.set(b.matIdx, []);
+        byMat.get(b.matIdx).push(b);
+        // A HOLE overlay also emits the underlying OBST so the &HOLE has something
+        // to cut through — without it the &HOLE line is inert.
+        if (MATERIALS[b.matIdx].emit === 'HOLE' && b.underMatIdx != null) {
+            if (!byMat.has(b.underMatIdx)) byMat.set(b.underMatIdx, []);
+            byMat.get(b.underMatIdx).push({ gx: b.gx, gy: b.gy, gz: b.gz, matIdx: b.underMatIdx });
+        }
+    }
+
+    const surfsUsed = new Set();
+    for (const i of byMat.keys()) surfsUsed.add(MATERIALS[i].id);
+
+    lines.push("! ─────────────────────────────────────────────────────────");
+    lines.push("! Scene generated by FDS Craft (voxel builder)");
+    lines.push("! Block size  : " + BLOCK_SIZE + " m (visual voxel)");
+    lines.push("! FDS cell    : " + fdsCell + " m");
+    lines.push("! Blocks      : " + blocks.size);
+    lines.push("! Generated   : " + new Date().toISOString());
+    lines.push("! ─────────────────────────────────────────────────────────");
+    lines.push("");
+    lines.push("&HEAD CHID='" + chid + "', TITLE='Scene built in FDS Craft' /");
+    lines.push("");
+    lines.push("&TIME T_END=" + tend + " /");
+    lines.push("");
+    lines.push("! ── Computational mesh (auto-sized + padding) ─────────────");
+    lines.push("&MESH ID='Mesh1', IJK=" + ni + "," + nj + "," + nk +
+               ", XB=" + fmt(xLo) + "," + fmt(xHi) +
+               "," + fmt(yLo) + "," + fmt(yHi) +
+               "," + fmt(zLo) + "," + fmt(zHi) + " /");
+    lines.push("");
+
+    const burnerIdx = MATERIALS.findIndex(m => m.id === 'BURNER');
+    if (byMat.has(burnerIdx)) {
+        lines.push("! ── Combustion reaction (polyurethane, SFPE handbook) ────");
+        lines.push("&REAC ID='POLYURETHANE',");
+        lines.push("      FUEL='POLYURETHANE',");
+        lines.push("      C=6.3, H=7.1, O=2.1, N=1.0,");
+        lines.push("      SOOT_YIELD=0.10,");
+        lines.push("      CO_YIELD=0.024,");
+        lines.push("      HEAT_OF_COMBUSTION=17000. /");
+        lines.push("");
+    }
+
+    lines.push("! ── Materials & surfaces ──────────────────────────────────");
+    if (surfsUsed.has('CONCRETE')) {
+        lines.push("&MATL ID='CONCRETE', DENSITY=2300., CONDUCTIVITY=1.8, SPECIFIC_HEAT=1.04 /");
+        lines.push("&SURF ID='CONCRETE', COLOR='GRAY', MATL_ID='CONCRETE', THICKNESS=0.2 /");
+    }
+    if (surfsUsed.has('WOOD')) {
+        lines.push("&MATL ID='WOOD', DENSITY=450., CONDUCTIVITY=0.14, SPECIFIC_HEAT=2.85 /");
+        lines.push("&SURF ID='WOOD', COLOR='SANDY BROWN', MATL_ID='WOOD', THICKNESS=0.025 /");
+    }
+    if (surfsUsed.has('STEEL')) {
+        lines.push("&SURF ID='STEEL', COLOR='SILVER' /");
+    }
+    if (surfsUsed.has('GLASS')) {
+        lines.push("&SURF ID='GLASS', COLOR='LIGHT BLUE', TRANSPARENCY=0.3 /");
+    }
+    if (surfsUsed.has('BURNER')) {
+        lines.push("! Burner: 500 kW/m² ramp over 30 s — fires from every exposed face");
+        lines.push("&SURF ID='BURNER', COLOR='RED', HRRPUA=500.0, TAU_Q=-30.0 /");
+    }
+    lines.push("");
+
+    let nObst = 0, nHole = 0;
+    const orderedMatIdx = Array.from(byMat.keys()).sort((a, b) => a - b);
+    for (const matIdx of orderedMatIdx) {
+        const mat = MATERIALS[matIdx];
+        const list = byMat.get(matIdx);
+        const runs = mergeRunsX(list);
+        lines.push("! " + mat.id + " — " + list.length + " block" +
+                   (list.length === 1 ? '' : 's') + " → " + runs.length + " run" +
+                   (runs.length === 1 ? '' : 's'));
+        for (const r of runs) {
+            const xb =
+                fmt(r.gx0 * BLOCK_SIZE) + "," + fmt(r.gx1 * BLOCK_SIZE) + "," +
+                fmt(r.gy * BLOCK_SIZE) + "," + fmt((r.gy + 1) * BLOCK_SIZE) + "," +
+                fmt(r.gz * BLOCK_SIZE) + "," + fmt((r.gz + 1) * BLOCK_SIZE);
+            if (mat.emit === 'HOLE') {
+                lines.push("&HOLE XB=" + xb + " /");
+                nHole++;
+            } else {
+                lines.push("&OBST XB=" + xb + ", SURF_ID='" + mat.id + "', COLOR='" + mat.fdsColor + "' /");
+                nObst++;
+            }
+        }
+        lines.push("");
+    }
+
+    lines.push("! ── Open boundaries (top + sides) ────────────────────────");
+    lines.push("&VENT MB='XMIN', SURF_ID='OPEN' /");
+    lines.push("&VENT MB='XMAX', SURF_ID='OPEN' /");
+    lines.push("&VENT MB='YMIN', SURF_ID='OPEN' /");
+    lines.push("&VENT MB='YMAX', SURF_ID='OPEN' /");
+    lines.push("&VENT MB='ZMAX', SURF_ID='OPEN' /");
+    lines.push("");
+
+    const zSlc = Math.min(1.5, zHi - 0.5);
+    lines.push("! ── Diagnostic slices ────────────────────────────────────");
+    lines.push("&SLCF PBZ=" + fmt(zSlc) + ", QUANTITY='TEMPERATURE' /");
+    // VISIBILITY needs a SOOT species — only emit when a burner (with &REAC + SOOT_YIELD)
+    // is in the scene, and always include SPEC_ID='SOOT' (FDS 6.8+ ERROR(1004) otherwise).
+    if (byMat.has(burnerIdx)) {
+        lines.push("&SLCF PBZ=" + fmt(zSlc) + ", QUANTITY='VISIBILITY', SPEC_ID='SOOT' /");
+        lines.push("&SLCF PBY=" + fmt((minY + maxY) * 0.5 * BLOCK_SIZE) + ", QUANTITY='HRRPUV' /");
+    }
+    lines.push("");
+    lines.push("&TAIL /");
+
+    lines[3] = "! OBSTs       : " + nObst + " (greedy-merged along X)";
+    lines.splice(4, 0, "! HOLEs       : " + nHole);
+
+    return lines.join('\n') + '\n';
+}
+
+// ──────────────────────────────────────────────────────────────
+// Resize + main loop
+// ──────────────────────────────────────────────────────────────
+function resize() {
+    const w = container.clientWidth, h = container.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+}
+window.addEventListener('resize', resize);
+
+let lastT = performance.now();
+function tick() {
+    requestAnimationFrame(tick);
+    const now = performance.now();
+    const dt = Math.min(0.05, (now - lastT) / 1000);
+    lastT = now;
+    updateMovement(dt);
+    updateAnimations(now, dt);
+    updateBurnerFx(now, dt);
+    updateCrackle(dt);
+    updateRaycast();
+    // Keep the star dome centred on the camera so stars don't parallax
+    if (starField) starField.position.copy(camera.position);
+    renderer.render(scene, camera);
+}
+tick();
+</script>
+</body>
+</html>
