@@ -108,4 +108,4 @@ Block, fire, and smoke textures are generated procedurally at runtime in pure JS
 
 ---
 
-*FDS is developed by NIST and VTT. Smokeview is part of the same toolset. This project has no affiliation with NIST or VTT — it's a fan project that just happens to speak their language.*
+*FDS and Smokeview are developed by [NIST](https://pages.nist.gov/fds-smv/), with contributions from VTT (Finland) and other groups worldwide. This project has no affiliation with NIST — it's a fan project that just happens to speak their language.*
