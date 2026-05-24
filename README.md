@@ -1,10 +1,10 @@
 # FDS Craft
 
-> A Minecraft-style voxel builder that exports valid input files for **Fire Dynamics Simulator** (FDS) — the world's most popular fire CFD tool. Designed to lure unsuspecting kids, students, and curious humans into fire engineering one block at a time.
-
 <p align="center">
   <img src="assets/Logo%20FDS.png" alt="FDS Craft logo" width="320">
 </p>
+
+> A Minecraft-style voxel builder that exports valid input files for **Fire Dynamics Simulator** (FDS) — the world's most popular fire CFD tool. Designed to lure unsuspecting kids, students, and curious humans into fire engineering one block at a time.
 
 <p align="center">
   <img src="assets/PromoGiF.gif" alt="FDS Craft in action" width="720">
