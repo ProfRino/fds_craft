@@ -1,5 +1,9 @@
 # FDS Craft
 
+[![Latest release](https://img.shields.io/github/v/release/ProfRino/fds_craft?logo=github&label=latest)](https://github.com/ProfRino/fds_craft/releases/latest)
+[![GitHub Downloads](https://img.shields.io/github/downloads/ProfRino/fds_craft/total?logo=github&label=downloads&color=blue)](https://github.com/ProfRino/fds_craft/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 <p align="center">
   <img src="assets/Logo%20FDS.png" alt="FDS Craft logo" width="320">
 </p>
@@ -12,6 +16,14 @@
 
 ---
 
+## Download
+
+**No installation. No build step. No admin rights. No internet at runtime.**
+
+Grab the [latest release zip](https://github.com/ProfRino/fds_craft/releases/latest), unzip it anywhere on your PC (Desktop, Downloads, USB stick, school network share — wherever), and double-click `index.html`. That's the whole setup procedure. Per-version download counts and older releases live at <https://github.com/ProfRino/fds_craft/releases>.
+
+If you'd rather track development, clone instead: `git clone https://github.com/ProfRino/fds_craft.git`.
+
 ## What is this?
 
 You place blocks. The app writes a [`&OBST`](https://github.com/firemodels/fds) for each one. You add a burner. The app writes `&REAC` and `&SURF` with sensible defaults. You hit **Export**, get a `.fds` file, drop it into FDS, and watch a polyurethane fire eat your scene.
@@ -20,13 +32,10 @@ It is, in fact, the gentlest possible on-ramp into a software ecosystem that nor
 
 ## Run it
 
-It's a single HTML file. There is no build step. There is no `npm install`. There is no toolchain.
+1. Open `index.html` from the unzipped folder in any modern browser.
+2. Click **Start**, click in the canvas to lock the pointer, build something, hit **Export**.
 
-1. Clone or download this repo.
-2. Open `index.html` in any modern browser.
-3. Click **Start**, click in the canvas to lock the pointer, build something, hit **Export**.
-
-That's it. If you want to host it, drop the folder on any static file server (GitHub Pages, Netlify, your nephew's Raspberry Pi). All assets are vendored — no network calls at runtime.
+That's it. Three.js and the fonts are vendored locally, so once you have the folder you can use FDS Craft offline forever. If you want to host it for a classroom, drop the folder on any static file server (GitHub Pages, Netlify, your nephew's Raspberry Pi).
 
 ## Controls
 
