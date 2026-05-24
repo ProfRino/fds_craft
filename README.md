@@ -95,13 +95,6 @@ No responsibility is taken for your kids becoming a fire engineer — or, even w
 
 Block, fire, and smoke textures are generated procedurally at runtime in pure JS canvas, so the entire visual identity weighs less than a single PNG.
 
-## Credits
-
-- **Project lead** — Prof Rino Lovreglio, Massey University (fire engineering, performance-based design, FDS workflows).
-- **Play tester** — Luke De Schot, University of Canterbury.
-- **Logo** — created by ChatGPT Image 2.
-- **Iterative pair-programming** — Claude Code (Anthropic).
-
 ## License
 
 [MIT](LICENSE) — do whatever you like, but don't blame us when the burner exports correctly *and* your living-room model floods with simulated soot.
