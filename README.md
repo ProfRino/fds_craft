@@ -1,7 +1,7 @@
 # FDS Craft
 
-[![Latest release](https://img.shields.io/github/v/release/ProfRino/fds_craft?logo=github&label=latest)](https://github.com/ProfRino/fds_craft/releases/latest)
-[![GitHub Downloads](https://img.shields.io/github/downloads/ProfRino/fds_craft/total?logo=github&label=downloads&color=blue)](https://github.com/ProfRino/fds_craft/releases)
+[![Latest release](https://img.shields.io/github/v/release/ProfRino/fds_craft?logo=github&label=latest&cacheSeconds=60)](https://github.com/ProfRino/fds_craft/releases/latest)
+[![GitHub Downloads](https://img.shields.io/github/downloads/ProfRino/fds_craft/total?logo=github&label=downloads&color=blue&cacheSeconds=60)](https://github.com/ProfRino/fds_craft/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
